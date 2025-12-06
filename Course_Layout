@@ -1,0 +1,268 @@
+from manim import *
+import numpy as np
+
+# --- 1. Configuration Globale du Fond ---
+config.background_color = WHITE
+config.stroke_color = BLACK
+config.fill_color = BLACK
+
+# ====================================================================
+# CLASSE GÉNÉRIQUE : ManimProblemGenerator
+# Cette classe crée l'animation 'split-screen' pour UN SEUL problème.
+# Elle est destinée à être instanciée par un script externe
+# qui lui fournit les données du problème (Mobjects et Texte).
+# ====================================================================
+
+class ManimProblemGenerator(Scene):
+    def __init__(self,
+                 left_mobs=None,
+                 right_mobs=None,
+                 bottom_text="",
+                 problem_title="Problème Mathématique",
+                 problem_number=1,
+                 total_problems=1,
+                 **kwargs):
+        """
+        Initialise la scène avec les Mobjects et le texte spécifiques au problème.
+
+        :param left_mobs: Liste de Mobjects (Tex, MathTex, VGroup, etc.) pour la boîte de gauche.
+        :param right_mobs: Liste de Mobjects pour la boîte de droite.
+        :param bottom_text: Texte de commentaire pour la boîte du bas.
+        :param problem_title: Titre principal de l'animation.
+        :param problem_number: Numéro du problème (pour affichage X/Y en bas à gauche).
+        :param total_problems: Nombre total de problèmes (pour affichage X/Y en bas à gauche).
+        """
+        super().__init__(**kwargs)
+        self.problem_data = {
+            "left_mobs": left_mobs if left_mobs is not None else [],
+            "right_mobs": right_mobs if right_mobs is not None else [],
+            "bottom_text": bottom_text,
+            "problem_title": problem_title,
+            "problem_number": problem_number,
+            "total_problems": total_problems,
+        }
+        
+        # Initialisation des variables de dimensionnement
+        self.UPPER_FRACTION = 4/5
+        self.LOWER_FRACTION = 1/5
+        self.PADDING_FACTOR = 0.95
+        self.NUMBER_FRACTION = 1/8
+        self.TEXT_FRACTION = 7/8
+        self.commentary_font_size = 30
+        self.numbering_font_size = 36
+        
+        # Mobjects de conteneur
+        self.left_box = None
+        self.right_box = None
+        self.bottom_left_box = None
+        self.bottom_right_box = None
+        
+        # Dimensions max du contenu
+        self.max_upper_width = None
+        self.max_upper_height = None
+        self.max_number_height = None
+        self.max_comment_width = None
+        self.max_comment_height = None
+
+    def construct(self):
+        # 1. Définition des Compartiments FIXES
+        self._setup_containers()
+        
+        # 2. Affichage Initial du Titre
+        self._show_initial_title()
+        
+        # 3. Affichage du Problème Unique
+        self._show_problem()
+
+    def _setup_containers(self):
+        """Définit et positionne les boîtes structurelles de l'écran."""
+        total_width = config.frame_width
+        total_height = config.frame_height
+        upper_height = total_height * self.UPPER_FRACTION
+        lower_height = total_height * self.LOWER_FRACTION
+        upper_box_width = total_width / 2 - 0.1
+
+        # --- Conteneur du Bas (Commentaires structuré) ---
+        bottom_y_center = DOWN * (total_height * (0.5 - self.LOWER_FRACTION/2))
+
+        # Sous-compartiment Gauche (Numéro)
+        self.bottom_left_box = Rectangle(
+            width=(total_width - 0.1) * self.NUMBER_FRACTION,
+            height=lower_height - 0.1,
+            color=GREEN_A, stroke_color=GREEN_D, stroke_opacity=1.0, fill_opacity=0.1
+        ).move_to(bottom_y_center + LEFT * (total_width * (0.5 - self.NUMBER_FRACTION/2)))
+
+        # Sous-compartiment Droit (Texte de Commentaire)
+        self.bottom_right_box = Rectangle(
+            width=(total_width - 0.1) * self.TEXT_FRACTION,
+            height=lower_height - 0.1,
+            color=GREEN_A, stroke_color=GREEN_D, stroke_opacity=1.0, fill_opacity=0.05
+        ).move_to(bottom_y_center + RIGHT * (total_width * (0.5 - self.TEXT_FRACTION/2)))
+
+        # Tailles MAX de contenu pour le bas
+        self.max_number_height = self.bottom_left_box.height * self.PADDING_FACTOR
+        self.max_comment_width = self.bottom_right_box.width * self.PADDING_FACTOR
+        self.max_comment_height = self.bottom_right_box.height * self.PADDING_FACTOR
+
+        # --- Conteneurs de Gauche et de Droite ---
+        upper_y_center = UP * (total_height * (0.5 - self.UPPER_FRACTION/2))
+
+        self.left_box = Rectangle(
+            width=upper_box_width,  height=upper_height - 0.1,
+            color=BLUE_A, stroke_color=BLUE_D, stroke_opacity=1.0, fill_opacity=0.05
+        ).move_to(upper_y_center + LEFT * total_width / 4)
+
+        self.right_box = Rectangle(
+            width=upper_box_width, height=upper_height - 0.1,
+            color=RED_A, stroke_color=RED_D, stroke_opacity=1.0, fill_opacity=0.05
+        ).move_to(upper_y_center + RIGHT * total_width / 4)
+
+        self.max_upper_width = self.left_box.width * self.PADDING_FACTOR
+        self.max_upper_height = self.left_box.height * self.PADDING_FACTOR
+
+    def _show_initial_title(self):
+        """Affiche le titre et introduit les boîtes d'information."""
+        title_text = self.problem_data["problem_title"]
+        title = Tex(r"\textbf{" + title_text + r"}", font_size=64, color=BLACK)
+        
+        self.play(Write(title))
+        self.wait(1.5)
+        
+        self.play(
+            FadeOut(title),
+            Create(self.left_box),
+            Create(self.right_box),
+            Create(self.bottom_left_box),
+            Create(self.bottom_right_box)
+        )
+        self.wait(0.5)
+
+    def _show_problem(self):
+        """Affiche le contenu du problème (équations, figures, commentaires) dans les boîtes."""
+        
+        # Utilise la fonction show_split réutilisée
+        self.show_split(
+            chap_number=self.problem_data["problem_number"],
+            total_chapters=self.problem_data["total_problems"],
+            left_mobs=self.problem_data["left_mobs"],
+            right_mobs=self.problem_data["right_mobs"],
+            bottom_text=self.problem_data["bottom_text"],
+            wait=3.0 # Temps d'affichage du problème
+        )
+        
+        # Clôture
+        self.play(FadeOut(self.left_box, self.right_box, self.bottom_left_box, self.bottom_right_box))
+        self.wait(1)
+
+    # --- Fonction de Présentation (Réutilisée et renommée pour la clarté) ---
+    def show_split(self, chap_number, total_chapters, left_mobs=None, right_mobs=None, bottom_text="", wait=2.5):
+        """
+        Fonction pour animer l'apparition du contenu dans les trois sections.
+        C'est l'ancienne fonction `show_split` du script original, conservée pour sa logique.
+        """
+        mobs_to_animate = []
+        all_mobs_to_fade = []
+        
+        # --- A. Compartiment Gauche ---
+        if left_mobs:
+            left_group = VGroup(*left_mobs)
+            if left_group.width > self.max_upper_width: left_group.width = self.max_upper_width
+            if left_group.height > self.max_upper_height: left_group.height = self.max_upper_height
+            left_group.move_to(self.left_box.get_center())
+            mobs_to_animate.extend([Create(m) if isinstance(m, VMobject) else Write(m) for m in left_group])
+            all_mobs_to_fade.extend(left_mobs)
+
+        # --- B. Compartiment Droit ---
+        if right_mobs:
+            right_group = VGroup(*right_mobs)
+            if right_group.width > self.max_upper_width: right_group.width = self.max_upper_width
+            if right_group.height > self.max_upper_height: right_group.height = self.max_upper_height
+            right_group.move_to(self.right_box.get_center())
+            mobs_to_animate.extend([Create(m) if isinstance(m, VMobject) else Write(m) for m in right_group])
+            all_mobs_to_fade.extend(right_mobs)
+
+        # --- C. Compartiment du Bas (Numéro X/Y + Commentaires) ---
+        
+        # 1. Numéro de Problème (dans la sous-boîte gauche)
+        # Note : On utilise 'chap_number' et 'total_chapters' car ils sont passés en arguments
+        num_mob = Text(f"{chap_number}/{total_chapters}", font_size=self.numbering_font_size, color=BLACK)
+        max_allowed_num_height = self.max_number_height * 0.5
+        if num_mob.height > max_allowed_num_height:
+             num_mob.height = max_allowed_num_height
+             
+        num_mob.move_to(self.bottom_left_box.get_center())
+        mobs_to_animate.append(Write(num_mob))
+        all_mobs_to_fade.append(num_mob)
+
+        # 2. Texte de Commentaire (dans la sous-boîte droite)
+        if bottom_text:
+            commentary = Paragraph(
+                bottom_text,
+                font_size=self.commentary_font_size,
+                color=BLACK,
+                line_spacing=1.2,
+            )
+            
+            # Ajustement de la largeur
+            if commentary.width > self.max_comment_width:
+                 commentary.width = self.max_comment_width
+            
+            # Ajustement de la hauteur
+            if commentary.height > self.max_comment_height:
+                commentary.height = self.max_comment_height
+            
+            # Positionnement : centrage vertical et alignement horizontal à GAUCHE de la zone.
+            commentary.move_to(self.bottom_right_box.get_center())
+            commentary.align_to(self.bottom_right_box.get_left(), LEFT).shift(RIGHT * (self.max_comment_width / 20))
+            
+            mobs_to_animate.append(Write(commentary))
+            all_mobs_to_fade.append(commentary)
+
+        # Animation
+        if mobs_to_animate:
+            self.play(*mobs_to_animate, run_time=1.5)
+            self.wait(wait)
+            self.play(*[FadeOut(m) for m in all_mobs_to_fade])
+
+
+# ====================================================================
+# EXEMPLE D'UTILISATION DU NOUVEAU SCRIPT
+# Ceci est l'endroit où vous soumettriez un nouveau problème de math.
+# Il ne fait pas partie de la classe générique, mais montre comment l'utiliser.
+# Pour générer une vidéo, vous utiliseriez 'manim -pql NOM_DU_FICHIER.py ExampleProblem'
+# ====================================================================
+
+class ExampleProblem(ManimProblemGenerator):
+    def __init__(self, **kwargs):
+        # 1. Définissez le contenu de votre problème ici :
+        # Contenu gauche (formule)
+        formula = MathTex(
+            r"\text{Calculer } \int_{0}^{2} x^2 \, dx",
+            color=BLACK,
+            font_size=64
+        )
+        
+        # Contenu droit (graphique/illustration)
+        axes = Axes(
+            x_range=[0, 3, 1], y_range=[0, 5, 1], 
+            x_length=3, y_length=4, axis_config={"color": BLACK}
+        )
+        graph = axes.plot(lambda x: x**2, x_range=[0, 2], color=RED)
+        area = axes.get_area(graph, x_range=[0, 2], color=RED, opacity=0.3)
+        
+        # Texte de commentaire
+        commentary = (
+            "Application fondamentale du théorème fondamental du calcul. "
+            "Le résultat est $8/3$, soit l'aire sous la courbe $y=x^2$ de 0 à 2."
+        )
+
+        # 2. Appelez l'initialiseur de la classe générique avec vos données :
+        super().__init__(
+            left_mobs=[formula],
+            right_mobs=[axes, graph, area],
+            bottom_text=commentary,
+            problem_title="Intégration Définie Simple",
+            problem_number=1, # Vous pouvez changer ceci
+            total_problems=1,  # Vous pouvez changer ceci
+            **kwargs
+        )
