@@ -1,0 +1,295 @@
+from manim import *
+import numpy as np
+
+# --- 1. Configuration Globale du Fond ---
+config.background_color = WHITE 
+config.stroke_color = BLACK
+config.fill_color = BLACK
+
+class SplitEngineeringMathV8(Scene):
+    def construct(self):
+        # --- 1. Définition des Compartiments FIXES ---
+        
+        # Dimensions de base
+        UPPER_FRACTION = 4/5 
+        LOWER_FRACTION = 1/5
+        total_width = config.frame_width
+        total_height = config.frame_height
+        upper_height = total_height * UPPER_FRACTION
+        lower_height = total_height * LOWER_FRACTION
+        upper_box_width = total_width / 2 - 0.1
+        TOTAL_CHAPTERS = 39 
+        
+        # Facteurs de PADDING et de DIVISION
+        PADDING_FACTOR = 0.95
+        NUMBER_FRACTION = 1/8  
+        TEXT_FRACTION = 7/8    
+        
+        # --- Conteneur du Bas (Commentaires structuré) ---
+        
+        bottom_y_center = DOWN * (total_height * (0.5 - LOWER_FRACTION/2))
+
+        # Sous-compartiment Gauche (Numéro)
+        self.bottom_left_box = Rectangle(
+            width=(total_width - 0.1) * NUMBER_FRACTION,  
+            height=lower_height - 0.1, 
+            color=GREEN_A, stroke_color=GREEN_D, stroke_opacity=1.0, fill_opacity=0.1
+        ).move_to(bottom_y_center + LEFT * (total_width * (0.5 - NUMBER_FRACTION/2)))
+        
+        # Sous-compartiment Droit (Texte de Commentaire)
+        self.bottom_right_box = Rectangle(
+            width=(total_width - 0.1) * TEXT_FRACTION,  
+            height=lower_height - 0.1, 
+            color=GREEN_A, stroke_color=GREEN_D, stroke_opacity=1.0, fill_opacity=0.05
+        ).move_to(bottom_y_center + RIGHT * (total_width * (0.5 - TEXT_FRACTION/2)))
+        
+        # Tailles MAX de contenu pour le bas
+        self.max_number_height = self.bottom_left_box.height * PADDING_FACTOR
+        self.max_comment_width = self.bottom_right_box.width * PADDING_FACTOR
+        self.max_comment_height = self.bottom_right_box.height * PADDING_FACTOR
+        
+        # POLICE STANDARDISÉE pour respecter 50% de la hauteur
+        # MODIFICATION : Taille de police des commentaires fixée à 30 (au lieu de 16)
+        self.commentary_font_size = 30 
+        self.numbering_font_size = 36 
+
+        # --- Conteneurs de Gauche et de Droite ---
+        upper_y_center = UP * (total_height * (0.5 - UPPER_FRACTION/2))
+        
+        self.left_box = Rectangle(
+            width=upper_box_width,  height=upper_height - 0.1,   
+            color=BLUE_A, stroke_color=BLUE_D, stroke_opacity=1.0, fill_opacity=0.05
+        ).move_to(upper_y_center + LEFT * total_width / 4)
+        
+        self.right_box = Rectangle(
+            width=upper_box_width, height=upper_height - 0.1,
+            color=RED_A, stroke_color=RED_D, stroke_opacity=1.0, fill_opacity=0.05
+        ).move_to(upper_y_center + RIGHT * total_width / 4)
+        
+        self.max_upper_width = self.left_box.width * PADDING_FACTOR
+        self.max_upper_height = self.left_box.height * PADDING_FACTOR
+
+        # --- Affichage Initial ---
+        title = Tex(r"\textbf{Toutes les Maths de John Bird}", font_size=64, color=BLACK)
+        self.play(Write(title))
+        self.wait(1.5)
+        self.play(
+            FadeOut(title),
+            Create(self.left_box),
+            Create(self.right_box),
+            Create(self.bottom_left_box),
+            Create(self.bottom_right_box)
+        )
+        
+        # --- 2. Séquence des Chapitres ---
+
+        chapters = [
+            self.chap_arithmetic, self.chap_fractions, self.chap_decimals, self.chap_calculator,
+            self.chap_percentages, self.chap_ratio, self.chap_powers, self.chap_units,
+            self.chap_basic_algebra, self.chap_further_algebra, self.chap_simple_equations,
+            self.chap_transposing, self.chap_simultaneous, self.chap_quadratic,
+            self.chap_logarithms, self.chap_exponential, self.chap_straight_line,
+            self.chap_non_linear_to_linear, self.chap_graphical_solution,
+            self.chap_angles_triangles, self.chap_trigonometry, self.chap_trig_waveforms,
+            self.chap_non_right_triangles, self.chap_coordinates, self.chap_areas,
+            self.chap_circle, self.chap_volumes, self.chap_irregular, self.chap_vectors,
+            self.chap_alternating_waveforms, self.chap_stat_presentation,
+            self.chap_mean_median_mode, self.chap_probability, self.chap_differentiation,
+            self.chap_integration, self.chap_sequences, self.chap_number_bases,
+            self.chap_inequalities, self.chap_log_scales,
+        ]
+
+        for i, chap_func in enumerate(chapters, 1):
+            chap_num = Text(f"Chapitre {i}", font_size=42, color=BLACK).to_corner(UP + LEFT).shift(RIGHT*1.5 + DOWN*0.2)
+            self.play(FadeIn(chap_num))
+            chap_func(i, TOTAL_CHAPTERS)
+            self.play(FadeOut(chap_num))
+            self.wait(0.2)
+
+        self.play(FadeOut(self.left_box, self.right_box, self.bottom_left_box, self.bottom_right_box))
+        self.wait(1)
+
+    # --- 3. Fonction de Présentation FINALE ---
+    def show_split(self, chap_number, total_chapters, left_mobs=None, right_mobs=None, bottom_text="", wait=2.5):
+        mobs_to_animate = []
+        all_mobs_to_fade = []
+        
+        # --- A/B. Compartiments Supérieurs (Logique inchangée) ---
+        if left_mobs:
+            left_group = VGroup(*left_mobs)
+            if left_group.width > self.max_upper_width: left_group.width = self.max_upper_width
+            if left_group.height > self.max_upper_height: left_group.height = self.max_upper_height
+            left_group.move_to(self.left_box.get_center())
+            mobs_to_animate.extend([Create(m) if isinstance(m, VMobject) else Write(m) for m in left_group])
+            all_mobs_to_fade.extend(left_mobs)
+
+        if right_mobs:
+            right_group = VGroup(*right_mobs)
+            if right_group.width > self.max_upper_width: right_group.width = self.max_upper_width
+            if right_group.height > self.max_upper_height: right_group.height = self.max_upper_height
+            right_group.move_to(self.right_box.get_center())
+            mobs_to_animate.extend([Create(m) if isinstance(m, VMobject) else Write(m) for m in right_group])
+            all_mobs_to_fade.extend(right_mobs)
+
+        # --- C. Compartiment du Bas (Numéro X/39 + Commentaires) ---
+        
+        # 1. Numéro de Chapitre (dans la sous-boîte gauche)
+        num_mob = Text(f"{chap_number}/{total_chapters}", font_size=self.numbering_font_size, color=BLACK)
+        # La hauteur du numéro reste limitée à 50% de la hauteur max du compartiment gauche
+        max_allowed_num_height = self.max_number_height * 0.5 
+        if num_mob.height > max_allowed_num_height: 
+             num_mob.height = max_allowed_num_height
+             
+        num_mob.move_to(self.bottom_left_box.get_center())
+        mobs_to_animate.append(Write(num_mob))
+        all_mobs_to_fade.append(num_mob)
+
+        # 2. Texte de Commentaire (dans la sous-boîte droite)
+        if bottom_text:
+            # MODIFICATION : Utilisation de Paragraph au lieu de Text
+            commentary = Paragraph(
+                bottom_text, 
+                font_size=self.commentary_font_size, 
+                color=BLACK,
+                line_spacing=1.2, 
+            )
+            
+            # Ajustement de la largeur
+            if commentary.width > self.max_comment_width:
+                 commentary.width = self.max_comment_width
+            
+            # MODIFICATION : Suppression de la CONTRAINTE HAUTEUR 50%
+            # On conserve l'ajustement si jamais la hauteur dépasse la zone disponible
+            if commentary.height > self.max_comment_height:
+                commentary.height = self.max_comment_height
+            
+            # Positionnement : centrage vertical et alignement horizontal à GAUCHE de la zone.
+            commentary.move_to(self.bottom_right_box.get_center())
+            commentary.align_to(self.bottom_right_box.get_left(), LEFT).shift(RIGHT * (self.max_comment_width / 20)) # Petit décalage pour le padding
+            
+            mobs_to_animate.append(Write(commentary))
+            all_mobs_to_fade.append(commentary)
+
+        # Animation
+        if mobs_to_animate:
+            self.play(*mobs_to_animate, run_time=1.5)
+            self.wait(wait)
+            self.play(*[FadeOut(m) for m in all_mobs_to_fade])
+
+
+    # ====================== LES 39 CHAPITRES ADAPTÉS ======================
+    
+    def chap_arithmetic(self, i, t):      self.show_split(i, t, left_mobs=[MathTex(r"485 + 237 = 722", color=BLACK)], bottom_text="Chapitre sur l'arithmétique de base.\nApprendre à manipuler efficacement les nombres entiers.")
+    def chap_fractions(self, i, t):        self.show_split(i, t, left_mobs=[MathTex(r"\frac{3}{4} + \frac{5}{6} = \frac{19}{24}", color=BLACK)], bottom_text="Opérations avec les fractions.\nEssentiel pour les rapports techniques.")
+    def chap_decimals(self, i, t):         self.show_split(i, t, left_mobs=[MathTex(r"0{,}125 \times 8 = 1{,}0", color=BLACK)], bottom_text="Multiplication et conversion de décimaux.\nImportant pour la précision des mesures.")
+    def chap_calculator(self, i, t):       self.show_split(i, t, left_mobs=[MathTex(r"12{,}5 \times 4{,}8 = 60", color=BLACK)], bottom_text="Maîtrise de la calculatrice scientifique.\nUtilisation des fonctions avancées.")
+    def chap_percentages(self, i, t):      self.show_split(i, t, left_mobs=[MathTex(r"15\% \text{ de } 80 = 12", color=BLACK)], bottom_text="Calcul des pourcentages.\nPour l'analyse de l'efficacité ou des tolérances.")
+    def chap_ratio(self, i, t):            self.show_split(i, t, left_mobs=[MathTex(r"3:5 \;\to\; 6:10", color=BLACK)], bottom_text="Comprendre les rapports et les proportions.\nBase pour l'échelle et la distribution.")
+    def chap_powers(self, i, t):           self.show_split(i, t, left_mobs=[MathTex(r"2^5 = 32 \quad ; \quad \sqrt{36} = 6", color=BLACK)], bottom_text="Exposants et radicaux.\nNécessaire pour les formules de puissance et de distance.")
+    def chap_units(self, i, t):            self.show_split(i, t, left_mobs=[MathTex(r"4{,}7\,k\Omega = 4700\,\Omega", color=BLACK)], bottom_text="Conversions d'unités SI.\nGérer les préfixes et les dimensions physiques.")
+    def chap_basic_algebra(self, i, t):    self.show_split(i, t, left_mobs=[MathTex(r"3x + 5 = 20", color=BLACK)], bottom_text="Introduction à la manipulation algébrique.\nRésoudre les expressions de base.")
+    def chap_further_algebra(self, i, t): self.show_split(i, t, left_mobs=[MathTex(r"(x+2)(x-3) = x^2 -x -6", color=BLACK)], bottom_text="Développement et factorisation de polynômes.\nPréparation aux équations complexes.")
+    def chap_simple_equations(self, i, t): self.show_split(i, t, left_mobs=[MathTex(r"5x - 13 = 27 \;\Rightarrow\; x=8", color=BLACK)], bottom_text="Résolution des équations à une variable.\nIsoler l'inconnue pour trouver la solution.")
+    def chap_transposing(self, i, t):      self.show_split(i, t, left_mobs=[MathTex(r"v = u + at \;\Rightarrow\; a = \frac{v-u}{t}", color=BLACK)], bottom_text="Transposition de formules.\nChanger l'objet de la formule pour une variable donnée.")
+    
+    def chap_simultaneous(self, i, t):     
+        eqs = VGroup(MathTex(r"2x+y=8", color=BLACK), MathTex(r"3x-y=7", color=BLACK)).arrange(DOWN)
+        sol = MathTex(r"x=3,\ y=2", color=BLACK).next_to(eqs, DOWN)
+        self.show_split(i, t, left_mobs=[eqs, sol], bottom_text="Résoudre des systèmes d'équations.\nUtilisé pour les points d'équilibre ou les réseaux électriques.")
+        
+    def chap_quadratic(self, i, t):        self.show_split(i, t, left_mobs=[MathTex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}", color=BLACK)], bottom_text="Formule quadratique.\nRésolution des équations de degré 2.")
+    def chap_logarithms(self, i, t):       self.show_split(i, t, left_mobs=[MathTex(r"\log_{10} 100 = 2", color=BLACK)], bottom_text="Propriétés des logarithmes.\nSimplifier les produits et les puissances complexes.")
+    def chap_exponential(self, i, t):      self.show_split(i, t, left_mobs=[MathTex(r"e^{0{,}693} \approx 2", color=BLACK)], bottom_text="Fonctions exponentielles.\nModéliser la croissance ou la décroissance naturelle.")
+    
+    def chap_straight_line(self, i, t):    
+        axes = Axes(x_range=[-4,4],y_range=[-2,10], axis_config={"color":BLACK}); g = axes.plot(lambda x:2*x+3,color=BLUE); l = axes.get_graph_label(g,"y=2x+3", color=BLACK)
+        self.show_split(i, t, right_mobs=[axes,g,l], left_mobs=[MathTex(r"y = mx+c", color=BLACK)], bottom_text="Tracé et analyse des lignes droites.\nDéterminer la pente (m) et l'ordonnée à l'origine (c).")
+        
+    def chap_non_linear_to_linear(self, i, t): self.show_split(i, t, left_mobs=[MathTex(r"y = kx^n \;\Rightarrow\; \log y = \log k + n \log x", color=BLACK)], bottom_text="Transformer des relations non linéaires.\nUtiliser les logs pour les rendre linéaires.")
+    
+    def chap_graphical_solution(self, i, t): 
+        axes = Axes(x_range=[-2,5],y_range=[-1,6], axis_config={"color":BLACK}); g1 = axes.plot(lambda x:x+1,color=RED); g2 = axes.plot(lambda x:4-x,color=GREEN); d = Dot(axes.c2p(2.5,2.5),color=YELLOW)
+        sol = MathTex(r"\text{Solution : } x=2{,}5", color=BLACK)
+        self.show_split(i, t, right_mobs=[axes,g1,g2,d], left_mobs=[sol], bottom_text="Trouver les solutions par intersection.\nMéthode graphique pour la résolution d'équations.")
+        
+    def chap_angles_triangles(self, i, t): 
+        tri = Triangle(color=BLACK); labs = VGroup(*[Tex("60°", color=BLACK).next_to(tri.get_vertices()[i],DOWN if i<2 else UP) for i in range(3)])
+        self.show_split(i, t, right_mobs=[tri,labs], left_mobs=[MathTex(r"A+B+C = 180^\circ", color=BLACK)], bottom_text="Propriétés des angles et géométrie.\nSomme des angles internes du triangle.")
+        
+    def chap_trigonometry(self, i, t):     self.show_split(i, t, left_mobs=[MathTex(r"\sin \theta = \frac{\text{opposé}}{\text{hypoténuse}}", color=BLACK)], bottom_text="Rapports trigonométriques SOH CAH TOA.\nApplications aux triangles rectangles.")
+    
+    def chap_trig_waveforms(self, i, t):   
+        axes = Axes(x_range=[0,4*PI,PI],y_range=[-1.5,1.5], axis_config={"color":BLACK}); w = axes.plot(np.sin,color=RED)
+        self.show_split(i, t, right_mobs=[axes,w], left_mobs=[MathTex(r"y = A \sin(\omega t)", color=BLACK)], bottom_text="Formes d'onde et fonctions trigonométriques.\nModéliser les phénomènes périodiques (AC).")
+        
+    def chap_non_right_triangles(self, i, t): self.show_split(i, t, left_mobs=[MathTex(r"\frac{a}{\sin A} = \frac{b}{\sin B} = \frac{c}{\sin C}", color=BLACK)], bottom_text="Loi des sinus.\nRésolution de triangles non rectangles.")
+    
+    def chap_coordinates(self, i, t):      
+        axes = Axes(x_range=[-4,4],y_range=[-4,4], axis_config={"color":BLACK}); d = Dot(axes.c2p(2,1),color=YELLOW); l = Tex("(2,1)", color=BLACK).next_to(d,UR)
+        self.show_split(i, t, right_mobs=[axes,d,l], left_mobs=[Tex("Distance formule", color=BLACK)], bottom_text="Systèmes de coordonnées et distance.\nLocalisation et déplacement de points.")
+        
+    def chap_areas(self, i, t):            
+        rect = Rectangle(width=4,height=2.5,color=BLUE); lab = MathTex(r"A = l \times w", color=BLACK).next_to(rect,DOWN)
+        self.show_split(i, t, right_mobs=[rect,lab], left_mobs=[MathTex(r"A = 10 \text{ unités}^2", color=BLACK)], bottom_text="Calcul d'aires.\nSurface des formes 2D standards.")
+        
+    def chap_circle(self, i, t):           
+        c = Circle(radius=2,color=GREEN); lab = MathTex(r"C = 2\pi r", color=BLACK).next_to(c,RIGHT)
+        self.show_split(i, t, right_mobs=[c,lab], left_mobs=[MathTex(r"A = \pi r^2", color=BLACK)], bottom_text="Propriétés du cercle.\nAire et circonférence.")
+        
+    def chap_volumes(self, i, t):          
+        cube = Cube(side_length=2,fill_opacity=0.7,stroke_color=TEAL); lab = MathTex(r"V = a^3", color=BLACK).next_to(cube,DOWN)
+        self.show_split(i, t, right_mobs=[cube,lab], left_mobs=[MathTex(r"V = 8 \text{ unités}^3", color=BLACK)], bottom_text="Calcul de volumes 3D.\nEspace occupé par un objet solide.")
+        
+    def chap_irregular(self, i, t):        
+        poly = Polygon(*[[x,y,0]for x,y in[(0,0),(3,0),(4,2),(1,3)]],color=ORANGE); lab = Tex("Règle de Simpson", color=BLACK).next_to(poly,DOWN)
+        self.show_split(i, t, right_mobs=[poly,lab], left_mobs=[Tex("Calcul d'Aire", color=BLACK)], bottom_text="Méthodes d'intégration numérique.\nEstimer l'aire de formes irrégulières.")
+        
+    def chap_vectors(self, i, t):          
+        v1 = Arrow(ORIGIN,2.5*RIGHT+0.8*UP,color=RED); v2 = Arrow(ORIGIN,0.8*RIGHT+2*UP,color=BLUE); res = Arrow(ORIGIN,v1.get_end()+v2.get_end(),color=YELLOW)
+        self.show_split(i, t, right_mobs=[v1,v2,res], left_mobs=[MathTex(r"\mathbf{A} + \mathbf{B}", color=BLACK)], bottom_text="Addition vectorielle.\nComposition des forces ou des vitesses.")
+        
+    def chap_alternating_waveforms(self, i, t): 
+        axes = Axes(x_range=[0,0.04,0.01],y_range=[-350,350,100], axis_config={"color":BLACK}); w = axes.plot(lambda t:325*np.sin(2*PI*50*t),color=PURPLE)
+        self.show_split(i, t, right_mobs=[axes,w], left_mobs=[MathTex(r"v = V_m \sin(\omega t)", color=BLACK)], bottom_text="Analyse des courants alternatifs.\nFréquence, amplitude et phase.")
+        
+    def chap_stat_presentation(self, i, t): 
+        # CORRECTION FINALE DU GRAPHIQUE 31 :
+        # Utilisation de numbers_to_include et include_numbers=True pour forcer les graduations
+        chart = BarChart(
+            values=[5,8,12,7,3],
+            bar_names=["A","B","C","D","E"],
+            y_range=[0,15,5],
+            axis_config={"color": BLACK, "include_numbers": True}, 
+            y_axis_config={"include_numbers": True, "numbers_to_include": range(0, 16, 5)} # Force les numéros
+        )
+        self.show_split(i, t, right_mobs=[chart], left_mobs=[Tex("Diagramme à barres", color=BLACK)], bottom_text="Présentation visuelle des données.\nDiagrammes en barres et histogrammes.")
+        
+    def chap_mean_median_mode(self, i, t): self.show_split(i, t, left_mobs=[MathTex(r"2,3,3,5,7,10 \;\to\; \text{moyenne}=5", color=BLACK)], bottom_text="Mesures de tendance centrale.\nCalcul de la moyenne, médiane et mode.")
+    def chap_probability(self, i, t):      self.show_split(i, t, left_mobs=[MathTex(r"P(A \cup B) = P(A)+P(B)-P(A \cap B)", color=BLACK)], bottom_text="Principes de probabilité.\nCalculer la chance qu'un événement se produise.")
+    def chap_differentiation(self, i, t): self.show_split(i, t, left_mobs=[MathTex(r"f(x)=3x^2-4x+1 \;\Rightarrow\; f'(x)=6x-4", color=BLACK)], bottom_text="Différentiation (dérivation).\nTrouver la pente d'une courbe à un point donné.")
+    def chap_integration(self, i, t):      self.show_split(i, t, left_mobs=[MathTex(r"\int (4x^3-2x)\,dx = x^4 - x^2 + C", color=BLACK)], bottom_text="Intégration.\nCalculer l'aire sous une courbe.")
+    def chap_sequences(self, i, t):        self.show_split(i, t, left_mobs=[MathTex(r"2,5,8,11,\dots \quad a_n=3n-1", color=BLACK)], bottom_text="Séquences et séries.\nTrouver la formule pour le $n$-ième terme.")
+    def chap_number_bases(self, i, t):     self.show_split(i, t, left_mobs=[MathTex(r"1011_2 = 11_{10} = B_{16}", color=BLACK)], bottom_text="Conversion des bases numériques.\nBases 2, 10 et 16.")
+    def chap_inequalities(self, i, t):     self.show_split(i, t, left_mobs=[MathTex(r"-2 < x \leq 5", color=BLACK)], bottom_text="Résolution d'inégalités.\nReprésenter la solution sur une ligne numérique.")
+
+    def chap_log_scales(self, i, t):
+        graph_width = self.max_upper_width 
+        graph_height = self.max_upper_height
+        
+        axes = Axes(
+            x_range=[0.1, 1000], y_range=[0, 10, 2],
+            x_length=graph_width, y_length=graph_height,
+            x_axis_config={"scaling": LogBase(base=10), "color":BLACK}, y_axis_config={"color":BLACK}, tips=False,
+        ) 
+        
+        graph = axes.plot(lambda x: 3 * np.log10(x), color=GOLD)
+        label = axes.get_graph_label(graph, r"y = 3\log_{10} x", color=BLACK)
+        calc = MathTex(r"\log_{10} (xy) = \log_{10} x + \log_{10} y", color=BLACK)
+        
+        self.show_split(
+            i, t,
+            left_mobs=[calc], 
+            right_mobs=[axes, graph, label], 
+            bottom_text="Utilisation des échelles logarithmiques.\nCompression de données sur une large plage de valeurs.",
+            wait=3
+        )
