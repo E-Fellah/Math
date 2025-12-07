@@ -62,8 +62,7 @@ class AdditionProblem(Scene):
         self.max_comment_width = self.bottom_right_box.width * PADDING_FACTOR
         self.max_comment_height = self.bottom_right_box.height * PADDING_FACTOR
 
-        # Create Boxes
-        self.play(*[Create(box) for box in [self.left_box, self.right_box, self.bottom_left_box, self.bottom_right_box]])
+        # Don't create boxes here - they'll be created in the first show_step call
         
         # --- Step-by-step solution ---
         self.solve_addition_problem()
