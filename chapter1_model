@@ -69,144 +69,152 @@ class AdditionProblem(Scene):
         self.solve_addition_problem()
 
     def solve_addition_problem(self):
-        # Step 0: Show the problem text
+        # Step 0: Show the problem
         self.show_step(
             step_num="0/12",
             left_content=[
-                Text("Problem 1.", color=BLACK, font_size=44, weight=BOLD).shift(UP*0.3),
-                Text("Determine 735+167", color=BLACK, font_size=40).shift(DOWN*0.3)
+                Text("Problem 1", color=BLACK, font_size=44, weight=BOLD).shift(UP*0.3),
+                Text("Determine 735 + 167", color=BLACK, font_size=40).shift(DOWN*0.3)
             ],
-            right_content=[VGroup()],  # Empty right side
-            explanation="Read the problem carefully. We need to find the sum of 735 and 167."
+            right_content=[VGroup()],
+            explanation="Read the problem carefully. We need to find the sum\nof 735 and 167."
         )
         
-        # Step 1: Problem Setup
+        # Step 1: Write equation
         self.show_step(
             step_num="1/12",
-            left_content=[MathTex(r"735 + 167 = ?", color=BLACK, font_size=48)],
-            right_content=self.create_vertical_setup(show_problem=True),
-            explanation="We are adding 735 and 167 using column addition method (HTU: Hundreds, Tens, Units)."
+            left_content=[
+                MathTex(r"735 + 167 = ?", color=BLACK, font_size=48).shift(UP*1.2),
+                Text("Column Addition Method", color=BLACK, font_size=32).shift(DOWN*0.8)
+            ],
+            right_content=[VGroup()],
+            explanation="We'll use the column addition method, adding digits\nfrom right to left (Units, Tens, Hundreds)."
         )
         
-        # Step 2: Identify columns
+        # Step 2: Setup vertical format
         self.show_step(
             step_num="2/12",
             left_content=[
-                MathTex(r"\text{H}", r"\text{T}", r"\text{U}", color=BLACK, font_size=44),
-                MathTex(r"7", r"3", r"5", color=BLACK, font_size=44).shift(DOWN*0.6),
-                MathTex(r"1", r"6", r"7", color=BLACK, font_size=44).shift(DOWN*1.2)
+                MathTex(r"735 + 167 = ?", color=BLACK, font_size=40).shift(UP*1.8)
             ],
-            right_content=self.create_vertical_setup(show_problem=True, highlight_columns=True),
-            explanation="Identify the place values: H = Hundreds, T = Tens, U = Units."
+            right_content=self.create_vertical_setup(show_problem=True),
+            explanation="Set up the numbers vertically, aligning digits by\nplace value (Hundreds, Tens, Units)."
         )
         
-        # Step 3: Start with Units column
+        # Step 3: Identify columns
         self.show_step(
             step_num="3/12",
             left_content=[
-                MathTex(r"\text{Units column:}", color=BLACK, font_size=40).shift(UP*0.5),
-                MathTex(r"5 + 7", color=BLUE, font_size=48)
+                MathTex(r"735 + 167 = ?", color=BLACK, font_size=40).shift(UP*1.8),
+                Text("H   T   U", color=BLACK, font_size=36).shift(DOWN*0.5)
             ],
-            right_content=self.create_vertical_setup(show_problem=True, highlight_unit=True),
-            explanation="Start with the rightmost column (Units). Add 5 + 7."
+            right_content=self.create_vertical_setup(show_problem=True, highlight_columns=True),
+            explanation="Label the columns: H = Hundreds, T = Tens, U = Units.\nWe always start from the rightmost column."
         )
         
-        # Step 4: Calculate 5+7
+        # Step 4: Add Units column
         self.show_step(
             step_num="4/12",
             left_content=[
-                MathTex(r"5 + 7 = 12", color=BLACK, font_size=48)
+                MathTex(r"735 + 167 = ?", color=BLACK, font_size=40).shift(UP*1.8),
+                MathTex(r"\text{Units: } 5 + 7", color=BLUE, font_size=44).shift(DOWN*0.5)
             ],
             right_content=self.create_vertical_setup(show_problem=True, highlight_unit=True),
-            explanation="5 + 7 equals 12. This is a two-digit number."
+            explanation="Start with the Units column. Add 5 + 7."
         )
         
-        # Step 5: Place 2 in units, carry 1
+        # Step 5: Calculate Units
         self.show_step(
             step_num="5/12",
             left_content=[
-                MathTex(r"12 = 10 + 2", color=BLACK, font_size=42).shift(UP*0.4),
-                MathTex(r"\text{Write: } 2", color=BLUE, font_size=42).shift(DOWN*0.3),
-                MathTex(r"\text{Carry: } 1", color=RED, font_size=42).shift(DOWN*0.9)
+                MathTex(r"735 + 167 = ?", color=BLACK, font_size=40).shift(UP*1.8),
+                MathTex(r"5 + 7 = 12", color=BLACK, font_size=44).shift(DOWN*0.2),
+                MathTex(r"12 = 1 \text{ ten} + 2 \text{ units}", color=BLACK, font_size=36).shift(DOWN*0.9)
             ],
-            right_content=self.create_vertical_setup(show_problem=True, show_u_result=True, show_carry_t=True),
-            explanation="Write 2 in the Units column. Carry 1 to the Tens column (because 12 = 10 + 2)."
+            right_content=self.create_vertical_setup(show_problem=True, highlight_unit=True),
+            explanation="5 + 7 = 12. Since 12 is two digits, we write 2 in the\nUnits place and carry 1 to the Tens column."
         )
         
-        # Step 6: Move to Tens column
+        # Step 6: Write Units result and carry
         self.show_step(
             step_num="6/12",
             left_content=[
-                MathTex(r"\text{Tens column:}", color=BLACK, font_size=40).shift(UP*0.5),
-                MathTex(r"3 + 6", color=BLUE, font_size=48)
+                MathTex(r"735 + 167 = ?", color=BLACK, font_size=40).shift(UP*1.8),
+                MathTex(r"\text{Write: } 2", color=GREEN_D, font_size=40).shift(DOWN*0.3),
+                MathTex(r"\text{Carry: } 1", color=RED, font_size=40).shift(DOWN*0.9)
             ],
-            right_content=self.create_vertical_setup(show_problem=True, show_u_result=True, show_carry_t=True, highlight_tens=True),
-            explanation="Move to the Tens column. We need to add 3 + 6."
+            right_content=self.create_vertical_setup(show_problem=True, show_u_result=True, show_carry_t=True),
+            explanation="Write 2 in the answer's Units place. Carry 1 to the\nTens column (shown in red above)."
         )
         
-        # Step 7: Add the carried 1
+        # Step 7: Add Tens column
         self.show_step(
             step_num="7/12",
             left_content=[
-                MathTex(r"3 + 6 + 1", color=BLACK, font_size=44).shift(UP*0.3),
-                MathTex(r"\text{(carried)}", color=RED, font_size=32).shift(DOWN*0.3)
+                MathTex(r"735 + 167 = ?", color=BLACK, font_size=40).shift(UP*1.8),
+                MathTex(r"\text{Tens: } 3 + 6 + 1", color=BLUE, font_size=44).shift(DOWN*0.3),
+                MathTex(r"\text{(don't forget carry!)}", color=RED, font_size=32).shift(DOWN*0.9)
             ],
             right_content=self.create_vertical_setup(show_problem=True, show_u_result=True, show_carry_t=True, highlight_tens=True),
-            explanation="Don't forget the carried 1! Add 3 + 6 + 1 (carried)."
+            explanation="Move to Tens column. Add 3 + 6, plus the carried 1.\nSo we calculate 3 + 6 + 1."
         )
         
-        # Step 8: Calculate 3+6+1
+        # Step 8: Calculate Tens
         self.show_step(
             step_num="8/12",
             left_content=[
-                MathTex(r"3 + 6 + 1 = 10", color=BLACK, font_size=48)
+                MathTex(r"735 + 167 = ?", color=BLACK, font_size=40).shift(UP*1.8),
+                MathTex(r"3 + 6 + 1 = 10", color=BLACK, font_size=44).shift(DOWN*0.2),
+                MathTex(r"10 = 1 \text{ hundred} + 0 \text{ tens}", color=BLACK, font_size=36).shift(DOWN*0.9)
             ],
             right_content=self.create_vertical_setup(show_problem=True, show_u_result=True, show_carry_t=True, highlight_tens=True),
-            explanation="3 + 6 + 1 equals 10. Again, a two-digit result."
+            explanation="3 + 6 + 1 = 10. Write 0 in the Tens place and carry\n1 to the Hundreds column."
         )
         
-        # Step 9: Place 0 in tens, carry 1
+        # Step 9: Write Tens result and carry
         self.show_step(
             step_num="9/12",
             left_content=[
-                MathTex(r"10 = 10 + 0", color=BLACK, font_size=42).shift(UP*0.4),
-                MathTex(r"\text{Write: } 0", color=BLUE, font_size=42).shift(DOWN*0.3),
-                MathTex(r"\text{Carry: } 1", color=RED, font_size=42).shift(DOWN*0.9)
+                MathTex(r"735 + 167 = ?", color=BLACK, font_size=40).shift(UP*1.8),
+                MathTex(r"\text{Write: } 0", color=GREEN_D, font_size=40).shift(DOWN*0.3),
+                MathTex(r"\text{Carry: } 1", color=RED, font_size=40).shift(DOWN*0.9)
             ],
             right_content=self.create_vertical_setup(show_problem=True, show_u_result=True, show_t_result=True, show_carry_h=True),
-            explanation="Write 0 in the Tens column. Carry 1 to the Hundreds column."
+            explanation="Write 0 in the answer's Tens place. Carry 1 to the\nHundreds column (shown in red above)."
         )
         
-        # Step 10: Move to Hundreds column
+        # Step 10: Add Hundreds column
         self.show_step(
             step_num="10/12",
             left_content=[
-                MathTex(r"\text{Hundreds column:}", color=BLACK, font_size=38).shift(UP*0.5),
-                MathTex(r"7 + 1 + 1", color=BLACK, font_size=44).shift(DOWN*0.2),
-                MathTex(r"\text{(carried)}", color=RED, font_size=32).shift(DOWN*0.8)
+                MathTex(r"735 + 167 = ?", color=BLACK, font_size=40).shift(UP*1.8),
+                MathTex(r"\text{Hundreds: } 7 + 1 + 1", color=BLUE, font_size=44).shift(DOWN*0.3),
+                MathTex(r"\text{(with carry)}", color=RED, font_size=32).shift(DOWN*0.9)
             ],
             right_content=self.create_vertical_setup(show_problem=True, show_u_result=True, show_t_result=True, show_carry_h=True, highlight_hundreds=True),
-            explanation="Move to Hundreds column. Add 7 + 1 + 1 (carried)."
+            explanation="Move to Hundreds column. Add 7 + 1, plus the\ncarried 1. So we calculate 7 + 1 + 1."
         )
         
-        # Step 11: Calculate final column
+        # Step 11: Calculate Hundreds
         self.show_step(
             step_num="11/12",
             left_content=[
-                MathTex(r"7 + 1 + 1 = 9", color=BLACK, font_size=48)
+                MathTex(r"735 + 167 = ?", color=BLACK, font_size=40).shift(UP*1.8),
+                MathTex(r"7 + 1 + 1 = 9", color=BLACK, font_size=44).shift(DOWN*0.5)
             ],
             right_content=self.create_vertical_setup(show_problem=True, show_u_result=True, show_t_result=True, show_carry_h=True, highlight_hundreds=True),
-            explanation="7 + 1 + 1 equals 9. Write 9 in the Hundreds column."
+            explanation="7 + 1 + 1 = 9. Write 9 in the Hundreds place.\nNo carry needed this time!"
         )
         
         # Step 12: Final answer
         self.show_step(
             step_num="12/12",
             left_content=[
-                MathTex(r"735 + 167 = 902", color=BLACK, font_size=48)
+                MathTex(r"735 + 167 = 902", color=BLACK, font_size=52).shift(UP*0.5),
+                Text("✓ Complete!", color=GREEN_D, font_size=36).shift(DOWN*0.8)
             ],
             right_content=self.create_vertical_setup(show_complete=True),
-            explanation="Final answer: 735 + 167 = 902. All columns complete!",
+            explanation="Final answer: 735 + 167 = 902\nAll columns are complete. Great work!",
             final_step=True
         )
 
@@ -219,53 +227,53 @@ class AdditionProblem(Scene):
         
         # Column headers (if highlighting columns)
         if highlight_columns:
-            h_label = Text("H", color=BLACK, font_size=28).shift(UP*1.8 + LEFT*0.8)
-            t_label = Text("T", color=BLACK, font_size=28).shift(UP*1.8)
-            u_label = Text("U", color=BLACK, font_size=28).shift(UP*1.8 + RIGHT*0.8)
+            h_label = Text("H", color=BLACK, font_size=32, weight=BOLD).shift(UP*2.0 + LEFT*0.9)
+            t_label = Text("T", color=BLACK, font_size=32, weight=BOLD).shift(UP*2.0)
+            u_label = Text("U", color=BLACK, font_size=32, weight=BOLD).shift(UP*2.0 + RIGHT*0.9)
             elements.add(h_label, t_label, u_label)
         
         # First number: 735
-        seven = MathTex("7", color=BLUE if highlight_hundreds else BLACK, font_size=52).shift(UP*1.0 + LEFT*0.8)
-        three = MathTex("3", color=BLUE if highlight_tens else BLACK, font_size=52).shift(UP*1.0)
-        five = MathTex("5", color=BLUE if highlight_unit else BLACK, font_size=52).shift(UP*1.0 + RIGHT*0.8)
+        seven = MathTex("7", color=BLUE if highlight_hundreds else BLACK, font_size=56).shift(UP*1.1 + LEFT*0.9)
+        three = MathTex("3", color=BLUE if highlight_tens else BLACK, font_size=56).shift(UP*1.1)
+        five = MathTex("5", color=BLUE if highlight_unit else BLACK, font_size=56).shift(UP*1.1 + RIGHT*0.9)
         elements.add(seven, three, five)
         
         # Plus sign and second number: 167
-        plus = MathTex("+", color=BLACK, font_size=40).shift(UP*0.2 + LEFT*1.4)
-        one = MathTex("1", color=BLUE if highlight_hundreds else BLACK, font_size=52).shift(UP*0.2 + LEFT*0.8)
-        six = MathTex("6", color=BLUE if highlight_tens else BLACK, font_size=52).shift(UP*0.2)
-        seven2 = MathTex("7", color=BLUE if highlight_unit else BLACK, font_size=52).shift(UP*0.2 + RIGHT*0.8)
+        plus = MathTex("+", color=BLACK, font_size=44).shift(UP*0.25 + LEFT*1.5)
+        one = MathTex("1", color=BLUE if highlight_hundreds else BLACK, font_size=56).shift(UP*0.25 + LEFT*0.9)
+        six = MathTex("6", color=BLUE if highlight_tens else BLACK, font_size=56).shift(UP*0.25)
+        seven2 = MathTex("7", color=BLUE if highlight_unit else BLACK, font_size=56).shift(UP*0.25 + RIGHT*0.9)
         elements.add(plus, one, six, seven2)
         
         # Horizontal line
-        line = Line(LEFT*1.6, RIGHT*1.6, color=BLACK, stroke_width=3).shift(DOWN*0.4)
+        line = Line(LEFT*1.8, RIGHT*1.8, color=BLACK, stroke_width=4).shift(DOWN*0.45)
         elements.add(line)
         
-        # Carry numbers
+        # Carry numbers (small, above the digits)
         if show_carry_t or show_complete:
-            carry_t = MathTex("1", color=RED, font_size=32).shift(UP*1.5 + LEFT*0.0)
+            carry_t = MathTex("1", color=RED, font_size=28).shift(UP*1.65 + RIGHT*0.0)
             elements.add(carry_t)
         
         if show_carry_h or show_complete:
-            carry_h = MathTex("1", color=RED, font_size=32).shift(UP*1.5 + LEFT*0.8)
+            carry_h = MathTex("1", color=RED, font_size=28).shift(UP*1.65 + LEFT*0.9)
             elements.add(carry_h)
         
         # Result digits
         if show_u_result or show_complete:
-            result_u = MathTex("2", color=GREEN_D, font_size=52).shift(DOWN*1.0 + RIGHT*0.8)
+            result_u = MathTex("2", color=GREEN_D, font_size=56).shift(DOWN*1.15 + RIGHT*0.9)
             elements.add(result_u)
         
         if show_t_result or show_complete:
-            result_t = MathTex("0", color=GREEN_D, font_size=52).shift(DOWN*1.0)
+            result_t = MathTex("0", color=GREEN_D, font_size=56).shift(DOWN*1.15)
             elements.add(result_t)
         
         if show_complete:
-            result_h = MathTex("9", color=GREEN_D, font_size=52).shift(DOWN*1.0 + LEFT*0.8)
+            result_h = MathTex("9", color=GREEN_D, font_size=56).shift(DOWN*1.15 + LEFT*0.9)
             elements.add(result_h)
         
-        # Scale to fit
-        if elements.height > self.max_upper_height:
-            elements.set_height(self.max_upper_height)
+        # Scale to fit if needed
+        if elements.height > self.max_upper_height * 0.95:
+            elements.scale_to_fit_height(self.max_upper_height * 0.95)
         
         elements.move_to(self.right_box)
         
@@ -280,15 +288,17 @@ class AdditionProblem(Scene):
         self.play(*[Create(box) for box in [self.left_box, self.right_box, self.bottom_left_box, self.bottom_right_box]], run_time=2.4)
         
         # Step number
-        id_text = Text(step_num, color=BLACK, font_size=36).move_to(self.bottom_left_box)
+        id_text = Text(step_num, color=BLACK, font_size=36, weight=BOLD).move_to(self.bottom_left_box)
         
         # Left box content (calculations)
         left_group = VGroup()
         for item in left_content:
             left_group.add(item)
-        left_group.arrange(DOWN, buff=0.4)
+        left_group.arrange(DOWN, buff=0.3)
         if left_group.width > self.max_upper_width:
-            left_group.set_width(self.max_upper_width)
+            left_group.scale_to_fit_width(self.max_upper_width)
+        if left_group.height > self.max_upper_height:
+            left_group.scale_to_fit_height(self.max_upper_height)
         left_group.move_to(self.left_box)
         
         # Right box content (visual)
@@ -296,13 +306,15 @@ class AdditionProblem(Scene):
         for item in right_content:
             right_group.add(item)
         if right_group.height > self.max_upper_height:
-            right_group.set_height(self.max_upper_height)
+            right_group.scale_to_fit_height(self.max_upper_height)
         right_group.move_to(self.right_box)
         
-        # Explanation text
-        expl = Text(explanation, color=BLACK, font_size=30)
+        # Explanation text - handle multiline properly
+        expl = Text(explanation, color=BLACK, font_size=30, line_spacing=1.1)
         if expl.width > self.max_comment_width:
-            expl.set_width(self.max_comment_width)
+            expl.scale_to_fit_width(self.max_comment_width)
+        if expl.height > self.max_comment_height:
+            expl.scale_to_fit_height(self.max_comment_height)
         expl.move_to(self.bottom_right_box)
         
         # Animate
