@@ -22,35 +22,50 @@ class MathProblemSolverTemplate(Scene):
         NUMBER_FRACTION = 1/8  
         TEXT_FRACTION = 7/8    
         
+        # Gap between bottom containers (same as original design)
+        BOTTOM_GAP = 0.1
+        
         # --- UI Containers ---
         bottom_y_center = DOWN * (total_height * (0.5 - LOWER_FRACTION/2))
         upper_y_center = UP * (total_height * (0.5 - UPPER_FRACTION/2))
 
-        # Bottom Left: ID/Counter
-        self.bottom_left_box = Rectangle(
-            width=(total_width - 0.1) * NUMBER_FRACTION,  
-            height=lower_height - 0.1, 
-            color=GREEN_A, stroke_color=GREEN_D, fill_opacity=0.1
-        ).move_to(bottom_y_center + LEFT * (total_width * (0.5 - NUMBER_FRACTION/2)))
-        
-        # Bottom Right: Explanation/Commentary
-        self.bottom_right_box = Rectangle(
-            width=(total_width - 0.1) * TEXT_FRACTION,  
-            height=lower_height - 0.1, 
-            color=GREEN_A, stroke_color=GREEN_D, fill_opacity=0.05
-        ).move_to(bottom_y_center + RIGHT * (total_width * (0.5 - TEXT_FRACTION/2)))
-        
-        # Top Left: Formula/Input
+        # Create top containers first
+        # Top Left: Formula/Input (MathTex ONLY container)
         self.left_box = Rectangle(
             width=upper_box_width,  height=upper_height - 0.1,   
             color=BLUE_A, stroke_color=BLUE_D, fill_opacity=0.05
         ).move_to(upper_y_center + LEFT * total_width / 4)
         
-        # Top Right: Visual/Graph
+        # Top Right: Visual/Graph (Manim Objects ONLY container)
         self.right_box = Rectangle(
             width=upper_box_width, height=upper_height - 0.1,
             color=RED_A, stroke_color=RED_D, fill_opacity=0.05
         ).move_to(upper_y_center + RIGHT * total_width / 4)
+
+        # Calculate the actual left edge position of the left_box
+        left_box_left_edge = self.left_box.get_left()[0]
+        right_box_right_edge = self.right_box.get_right()[0]
+        
+        # Calculate available width for bottom containers (minus gap)
+        available_bottom_width = right_box_right_edge - left_box_left_edge - BOTTOM_GAP
+        
+        # Bottom Left: ID/Counter - Align left edge with left_box
+        bottom_left_width = available_bottom_width * NUMBER_FRACTION
+        bottom_left_x = left_box_left_edge + (bottom_left_width / 2)
+        self.bottom_left_box = Rectangle(
+            width=bottom_left_width,  
+            height=lower_height - 0.1, 
+            color=GREEN_A, stroke_color=GREEN_D, fill_opacity=0.1
+        ).move_to([bottom_left_x, bottom_y_center[1], 0])
+        
+        # Bottom Right: Explanation/Commentary - Align right edge with right_box
+        bottom_right_width = available_bottom_width * TEXT_FRACTION
+        bottom_right_x = right_box_right_edge - (bottom_right_width / 2)
+        self.bottom_right_box = Rectangle(
+            width=bottom_right_width,  
+            height=lower_height - 0.1, 
+            color=GREEN_A, stroke_color=GREEN_D, fill_opacity=0.05
+        ).move_to([bottom_right_x, bottom_y_center[1], 0])
 
         # Max Dimensions for scaling
         self.max_upper_width = self.left_box.width * PADDING_FACTOR
@@ -58,48 +73,183 @@ class MathProblemSolverTemplate(Scene):
         self.max_comment_width = self.bottom_right_box.width * PADDING_FACTOR
         self.max_comment_height = self.bottom_right_box.height * PADDING_FACTOR
 
-        # --- 2. Logic: Submission or Placeholder ---
-        # TO USE: Add your math data here. If empty, the invite will show.
+        # --- 2. Logic: Directly display the example ---
+        # Example math problem with proper format
         current_submission = {
-            "id": None, # e.g., "1"
-            "math_tex": None, # e.g., MathTex(r"x^2=4")
-            "visuals": None, # e.g., [Circle(), Dot()]
-            "explanation": None # "Step 1: Isolate x."
+            "id": "1",
+            "math_tex": [
+                # LEFT CONTAINER: MathTex objects only
+                MathTex(r"1+1", color=BLACK),
+                MathTex(r"= 2", color=BLACK).next_to(MathTex(r"1+1"), RIGHT)
+            ],
+            "visuals": [
+                # RIGHT CONTAINER: Manim visual objects only
+                # Example: Coordinate plane
+                Axes(
+                    x_range=[-3, 3, 1],
+                    y_range=[-3, 3, 1],
+                    x_length=5,
+                    y_length=5,
+                    axis_config={"color": BLACK, "stroke_width": 2},
+                    tips=False
+                ).scale(0.7),
+                # Points representing 1 and 1
+                Dot(point=LEFT, color=BLACK),
+                Dot(point=RIGHT, color=BLACK),
+                # Line connecting them
+                Line(start=LEFT, end=RIGHT, color=BLACK, stroke_width=2),
+                # Label for sum
+                Text("2", color=BLACK, font_size=24).next_to(UP * 2, UP)
+            ],
+            "explanation": "Example: Visualizing addition on a coordinate plane.\nLeft box contains formulas, right box contains visual representations."
         }
 
-        if current_submission["math_tex"] is None:
-            self.display_invitation()
-        else:
-            self.display_problem(current_submission)
+        self.display_problem(current_submission)
 
-    def display_invitation(self):
-        title = Tex(r"\textbf{Engineering Math Solver}", font_size=50, color=BLACK).shift(UP*0.5)
-        invite = Text("Please submit your math problem to populate this template.", 
-                      font_size=30, color=DARK_GRAY).next_to(title, DOWN)
-        self.play(FadeIn(title), Write(invite))
-        self.wait(2)
+    def create_alignment_grid(self, container, grid_spacing=0.5):
+        """Create a subtle alignment grid for a container, similar to MS Word's grid"""
+        grid = VGroup()
+        
+        # Get container dimensions and position
+        width = container.width * 0.95  # Slightly smaller than container
+        height = container.height * 0.95
+        center = container.get_center()
+        
+        # Create vertical grid lines
+        num_vertical = int(width / grid_spacing)
+        for i in range(-num_vertical//2, num_vertical//2 + 1):
+            x_pos = i * grid_spacing
+            line = Line(
+                start=center + UP * height/2 + RIGHT * x_pos,
+                end=center + DOWN * height/2 + RIGHT * x_pos,
+                color=GRAY_E,  # Very light gray
+                stroke_width=0.5,
+                stroke_opacity=0.2  # Very subtle
+            )
+            grid.add(line)
+        
+        # Create horizontal grid lines
+        num_horizontal = int(height / grid_spacing)
+        for i in range(-num_horizontal//2, num_horizontal//2 + 1):
+            y_pos = i * grid_spacing
+            line = Line(
+                start=center + LEFT * width/2 + UP * y_pos,
+                end=center + RIGHT * width/2 + UP * y_pos,
+                color=GRAY_E,
+                stroke_width=0.5,
+                stroke_opacity=0.2
+            )
+            grid.add(line)
+        
+        # Add center crosshair for alignment
+        center_cross = VGroup(
+            Line(
+                start=center + LEFT * 0.3,
+                end=center + RIGHT * 0.3,
+                color=GRAY_D,
+                stroke_width=1,
+                stroke_opacity=0.3
+            ),
+            Line(
+                start=center + DOWN * 0.3,
+                end=center + UP * 0.3,
+                color=GRAY_D,
+                stroke_width=1,
+                stroke_opacity=0.3
+            )
+        )
+        grid.add(center_cross)
+        
+        return grid
 
     def display_problem(self, data):
         # Create Boxes
         self.play(map(Create, [self.left_box, self.right_box, self.bottom_left_box, self.bottom_right_box]))
 
+        # Create alignment grids for left and right containers
+        left_grid = self.create_alignment_grid(self.left_box, grid_spacing=0.3)
+        right_grid = self.create_alignment_grid(self.right_box, grid_spacing=0.3)
+        
+        # Add grids to containers (fade them in very subtly)
+        self.play(FadeIn(left_grid, run_time=0.5, lag_ratio=0.1, rate_func=rate_functions.ease_in_out_sine))
+        self.play(FadeIn(right_grid, run_time=0.5, lag_ratio=0.1, rate_func=rate_functions.ease_in_out_sine))
+
         # A. ID Box
         id_text = Text(str(data["id"]), color=BLACK, font_size=36).move_to(self.bottom_left_box)
         
-        # B. Math Box (Left)
-        m_group = VGroup(*data["math_tex"])
-        m_group.set_width(self.max_upper_width) if m_group.width > self.max_upper_width else None
-        m_group.move_to(self.left_box)
+        # B. Math Box (Left) - MathTex objects ONLY
+        math_group = VGroup(*data["math_tex"])
+        # Center and scale math content
+        math_group.arrange(RIGHT, buff=0.5)
+        if math_group.width > self.max_upper_width or math_group.height > self.max_upper_height:
+            math_group.scale_to_fit_width(self.max_upper_width * 0.8)
+        math_group.move_to(self.left_box)
+        
+        # C. Visual Box (Right) - Manim objects ONLY
+        visual_group = VGroup(*data["visuals"])
+        # Scale visual content to fit
+        if visual_group.width > self.max_upper_width or visual_group.height > self.max_upper_height:
+            visual_group.scale_to_fit_width(self.max_upper_width * 0.9)
+            visual_group.scale_to_fit_height(self.max_upper_height * 0.9)
+        visual_group.move_to(self.right_box)
 
-        # C. Visual Box (Right)
-        v_group = VGroup(*data["visuals"])
-        v_group.set_height(self.max_upper_height) if v_group.height > self.max_upper_height else None
-        v_group.move_to(self.right_box)
+        # D. Explanation (Bottom Right) - Fixed font size 24, max 2 lines
+        # Split explanation into lines, limit to 2 lines
+        explanation_lines = data["explanation"].split('\n')[:2]
+        
+        # Create explanation text with fixed font size
+        expl = VGroup()
+        for i, line in enumerate(explanation_lines):
+            line_text = Text(line, color=BLACK, font_size=24)
+            line_text.shift(DOWN * i * 0.5)  # Line spacing
+            expl.add(line_text)
+        
+        # Center the explanation group vertically
+        expl.arrange(DOWN, center=False, aligned_edge=LEFT)
+        expl.move_to(self.bottom_right_box)
+        
+        # Scale if too wide (but keep font size fixed by scaling group)
+        if expl.width > self.max_comment_width:
+            expl.scale_to_fit_width(self.max_comment_width * 0.9)
+        
+        # Position to align with left edge of container
+        expl.align_to(self.bottom_right_box.get_left(), LEFT)
+        expl.shift(RIGHT * 0.2)
 
-        # D. Explanation (Bottom Right)
-        expl = Paragraph(data["explanation"], color=BLACK, font_size=24)
-        expl.set_width(self.max_comment_width) if expl.width > self.max_comment_width else None
-        expl.move_to(self.bottom_right_box).align_to(self.bottom_right_box.get_left(), LEFT).shift(RIGHT*0.2)
-
-        self.play(Write(id_text), Write(m_group), Create(v_group), Write(expl))
-        self.wait(3)
+        # Animate in order
+        self.play(Write(id_text))
+        self.play(Write(math_group))
+        self.play(Create(visual_group))
+        self.play(Write(expl))
+        
+        # Show that objects can be aligned to the grid
+        # Flash the grid lines where the math objects are aligned
+        self.wait(0.5)
+        
+        # Show alignment hints (subtle)
+        math_center = math_group.get_center()
+        visual_center = visual_group.get_center()
+        
+        # Create alignment indicators
+        math_alignment = VGroup(
+            Circle(radius=0.05, color=BLUE_C, fill_opacity=0.3, stroke_width=0).move_to(math_center),
+            Text("Aligned", font_size=12, color=BLUE_D).next_to(math_center, UP, buff=0.1)
+        )
+        visual_alignment = VGroup(
+            Circle(radius=0.05, color=RED_C, fill_opacity=0.3, stroke_width=0).move_to(visual_center),
+            Text("Aligned", font_size=12, color=RED_D).next_to(visual_center, UP, buff=0.1)
+        )
+        
+        self.play(
+            FadeIn(math_alignment, scale=0.5),
+            FadeIn(visual_alignment, scale=0.5),
+            run_time=0.5
+        )
+        self.wait(0.3)
+        self.play(
+            FadeOut(math_alignment),
+            FadeOut(visual_alignment),
+            run_time=0.3
+        )
+        
+        self.wait(2)
