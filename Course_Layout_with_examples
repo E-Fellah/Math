@@ -1,16 +1,14 @@
 from manim import *
 import numpy as np
 
-# --- 1. Configuration Globale du Fond ---
+# --- 1. Global Configuration ---
 config.background_color = WHITE 
 config.stroke_color = BLACK
 config.fill_color = BLACK
 
-class SplitEngineeringMathV8(Scene):
+class EngineeringMathWithGrids(Scene):
     def construct(self):
-        # --- 1. Définition des Compartiments FIXES ---
-        
-        # Dimensions de base
+        # --- 1. Geometry & Layout Setup ---
         UPPER_FRACTION = 4/5 
         LOWER_FRACTION = 1/5
         total_width = config.frame_width
@@ -18,59 +16,70 @@ class SplitEngineeringMathV8(Scene):
         upper_height = total_height * UPPER_FRACTION
         lower_height = total_height * LOWER_FRACTION
         upper_box_width = total_width / 2 - 0.1
-        TOTAL_CHAPTERS = 39 
         
-        # Facteurs de PADDING et de DIVISION
+        # Padding & Scaling Factors
         PADDING_FACTOR = 0.95
         NUMBER_FRACTION = 1/8  
         TEXT_FRACTION = 7/8    
         
-        # --- Conteneur du Bas (Commentaires structuré) ---
+        # Gap between bottom containers
+        BOTTOM_GAP = 0.1
         
+        # --- UI Containers ---
         bottom_y_center = DOWN * (total_height * (0.5 - LOWER_FRACTION/2))
-
-        # Sous-compartiment Gauche (Numéro)
-        self.bottom_left_box = Rectangle(
-            width=(total_width - 0.1) * NUMBER_FRACTION,  
-            height=lower_height - 0.1, 
-            color=GREEN_A, stroke_color=GREEN_D, stroke_opacity=1.0, fill_opacity=0.1
-        ).move_to(bottom_y_center + LEFT * (total_width * (0.5 - NUMBER_FRACTION/2)))
-        
-        # Sous-compartiment Droit (Texte de Commentaire)
-        self.bottom_right_box = Rectangle(
-            width=(total_width - 0.1) * TEXT_FRACTION,  
-            height=lower_height - 0.1, 
-            color=GREEN_A, stroke_color=GREEN_D, stroke_opacity=1.0, fill_opacity=0.05
-        ).move_to(bottom_y_center + RIGHT * (total_width * (0.5 - TEXT_FRACTION/2)))
-        
-        # Tailles MAX de contenu pour le bas
-        self.max_number_height = self.bottom_left_box.height * PADDING_FACTOR
-        self.max_comment_width = self.bottom_right_box.width * PADDING_FACTOR
-        self.max_comment_height = self.bottom_right_box.height * PADDING_FACTOR
-        
-        # POLICE STANDARDISÉE pour respecter 50% de la hauteur
-        # MODIFICATION : Taille de police des commentaires fixée à 30 (au lieu de 16)
-        self.commentary_font_size = 30 
-        self.numbering_font_size = 36 
-
-        # --- Conteneurs de Gauche et de Droite ---
         upper_y_center = UP * (total_height * (0.5 - UPPER_FRACTION/2))
-        
+
+        # Create top containers first
+        # Top Left: Math Formulas
         self.left_box = Rectangle(
             width=upper_box_width,  height=upper_height - 0.1,   
-            color=BLUE_A, stroke_color=BLUE_D, stroke_opacity=1.0, fill_opacity=0.05
+            color=BLUE_A, stroke_color=BLUE_D, fill_opacity=0.05
         ).move_to(upper_y_center + LEFT * total_width / 4)
         
+        # Top Right: Visual/Graph (empty for now)
         self.right_box = Rectangle(
             width=upper_box_width, height=upper_height - 0.1,
-            color=RED_A, stroke_color=RED_D, stroke_opacity=1.0, fill_opacity=0.05
+            color=RED_A, stroke_color=RED_D, fill_opacity=0.05
         ).move_to(upper_y_center + RIGHT * total_width / 4)
+
+        # Calculate the actual left edge position of the left_box
+        left_box_left_edge = self.left_box.get_left()[0]
+        right_box_right_edge = self.right_box.get_right()[0]
         
+        # Calculate available width for bottom containers (minus gap)
+        available_bottom_width = right_box_right_edge - left_box_left_edge - BOTTOM_GAP
+        
+        # Bottom Left: Chapter Counter
+        bottom_left_width = available_bottom_width * NUMBER_FRACTION
+        bottom_left_x = left_box_left_edge + (bottom_left_width / 2)
+        self.bottom_left_box = Rectangle(
+            width=bottom_left_width,  
+            height=lower_height - 0.1, 
+            color=GREEN_A, stroke_color=GREEN_D, fill_opacity=0.1
+        ).move_to([bottom_left_x, bottom_y_center[1], 0])
+        
+        # Bottom Right: Explanation
+        bottom_right_width = available_bottom_width * TEXT_FRACTION
+        bottom_right_x = right_box_right_edge - (bottom_right_width / 2)
+        self.bottom_right_box = Rectangle(
+            width=bottom_right_width,  
+            height=lower_height - 0.1, 
+            color=GREEN_A, stroke_color=GREEN_D, fill_opacity=0.05
+        ).move_to([bottom_right_x, bottom_y_center[1], 0])
+
+        # Max Dimensions for scaling
         self.max_upper_width = self.left_box.width * PADDING_FACTOR
         self.max_upper_height = self.left_box.height * PADDING_FACTOR
+        self.max_comment_width = self.bottom_right_box.width * PADDING_FACTOR
+        self.max_comment_height = self.bottom_right_box.height * PADDING_FACTOR
 
-        # --- Affichage Initial ---
-        title = Tex(r"\textbf{Toutes les Maths de John Bird}", font_size=64, color=BLACK)
+        # Font sizes
+        self.commentary_font_size = 24  # Fixed size for explanations
+        self.title_font_size = 20  # Two steps smaller than comment (24 -> 22 -> 20)
+        self.numbering_font_size = 36   # Size for chapter counter
+
+        # --- Display boxes first ---
+        title = Tex(r"\textbf{All Maths from John Bird}", font_size=64, color=BLACK)
         self.play(Write(title))
         self.wait(1.5)
         self.play(
@@ -80,216 +89,457 @@ class SplitEngineeringMathV8(Scene):
             Create(self.bottom_left_box),
             Create(self.bottom_right_box)
         )
-        
-        # --- 2. Séquence des Chapitres ---
 
+        # --- Create alignment grids for top containers ---
+        left_grid = self.create_alignment_grid(self.left_box, grid_spacing=0.3)
+        right_grid = self.create_alignment_grid(self.right_box, grid_spacing=0.3)
+        
+        # Add grids to containers
+        self.play(
+            FadeIn(left_grid, run_time=0.5, lag_ratio=0.1, rate_func=rate_functions.ease_in_out_sine),
+            FadeIn(right_grid, run_time=0.5, lag_ratio=0.1, rate_func=rate_functions.ease_in_out_sine)
+        )
+
+        # --- 2. Chapter Sequence ---
         chapters = [
-            self.chap_arithmetic, self.chap_fractions, self.chap_decimals, self.chap_calculator,
-            self.chap_percentages, self.chap_ratio, self.chap_powers, self.chap_units,
-            self.chap_basic_algebra, self.chap_further_algebra, self.chap_simple_equations,
-            self.chap_transposing, self.chap_simultaneous, self.chap_quadratic,
-            self.chap_logarithms, self.chap_exponential, self.chap_straight_line,
-            self.chap_non_linear_to_linear, self.chap_graphical_solution,
-            self.chap_angles_triangles, self.chap_trigonometry, self.chap_trig_waveforms,
-            self.chap_non_right_triangles, self.chap_coordinates, self.chap_areas,
-            self.chap_circle, self.chap_volumes, self.chap_irregular, self.chap_vectors,
-            self.chap_alternating_waveforms, self.chap_stat_presentation,
-            self.chap_mean_median_mode, self.chap_probability, self.chap_differentiation,
-            self.chap_integration, self.chap_sequences, self.chap_number_bases,
-            self.chap_inequalities, self.chap_log_scales,
+            self.chap_basic_arithmetic, self.chap_fractions, self.chap_decimals, 
+            self.chap_using_calculator, self.chap_percentages, self.chap_ratio_and_proportion,
+            self.chap_powers_roots_and_laws_of_indices, self.chap_units_prefixes_and_engineering_notation,
+            self.chap_basic_algebra, self.chap_further_algebra, self.chap_solving_simple_equations,
+            self.chap_transposing_formulae, self.chap_solving_simultaneous_equations,
+            self.chap_solving_quadratic_equations, self.chap_logarithms, self.chap_exponential_functions,
+            self.chap_straight_line_graphs, self.chap_graphs_reducing_non_linear_laws_to_linear_form,
+            self.chap_graphical_solution_of_equations, self.chap_angles_and_triangles,
+            self.chap_introduction_to_trigonometry, self.chap_trigonometric_waveforms,
+            self.chap_non_right_angled_triangles_and_applications, self.chap_cartesian_and_polar_coordinates,
+            self.chap_areas_of_common_shapes, self.chap_the_circle_and_its_properties,
+            self.chap_volumes_and_surface_areas_of_common_solids, self.chap_irregular_areas_and_volumes_and_mean_values,
+            self.chap_vectors, self.chap_methods_of_adding_alternating_waveforms,
+            self.chap_presentation_of_statistical_data, self.chap_mean_median_mode_and_standard_deviation,
+            self.chap_probability, self.chap_introduction_to_differentiation,
+            self.chap_introduction_to_integration, self.chap_number_sequences,
+            self.chap_binary_octal_and_hexadecimal_numbers, self.chap_inequalities,
+            self.chap_graphs_with_logarithmic_scales,
         ]
 
+        TOTAL_CHAPTERS = 39
+
         for i, chap_func in enumerate(chapters, 1):
-            chap_num = Text(f"Chapitre {i}", font_size=42, color=BLACK).to_corner(UP + LEFT).shift(RIGHT*1.5 + DOWN*0.2)
-            self.play(FadeIn(chap_num))
+            # Display chapter title in English
+            english_titles = [
+                "Basic arithmetic", "Fractions", "Decimals", "Using a calculator", "Percentages",
+                "Ratio and proportion", "Powers, roots and laws of indices", "Units, prefixes and engineering notation",
+                "Basic algebra", "Further algebra", "Solving simple equations", "Transposing formulae",
+                "Solving simultaneous equations", "Solving quadratic equations", "Logarithms", "Exponential functions",
+                "Straight line graphs", "Graphs reducing non-linear laws to linear form",
+                "Graphical solution of equations", "Angles and triangles", "Introduction to trigonometry",
+                "Trigonometric waveforms", "Non-right-angled triangles and applications",
+                "Cartesian and polar coordinates", "Areas of common shapes", "The circle and its properties",
+                "Volumes and surface areas of common solids", "Irregular areas and volumes and mean values",
+                "Vectors", "Methods of adding alternating waveforms", "Presentation of statistical data",
+                "Mean, median, mode and standard deviation", "Probability", "Introduction to differentiation",
+                "Introduction to integration", "Number sequences", "Binary, octal and hexadecimal numbers",
+                "Inequalities", "Graphs with logarithmic scales"
+            ]
+            title_text = english_titles[i-1] if i-1 < len(english_titles) else f"Chapter {i}"
+            
+            # Create title text with smaller font size (20)
+            chap_title = Text(title_text, font_size=self.title_font_size, color=BLACK)
+            
+            # Ensure title doesn't cross container edges
+            max_title_width = config.frame_width * 0.9  # 90% of frame width for safety
+            if chap_title.width > max_title_width:
+                # Scale down proportionally
+                scale_factor = max_title_width / chap_title.width
+                chap_title.scale(scale_factor)
+            
+            # Position at top left corner - positioned more to the left (reduced shift to right)
+            # Changed from RIGHT * 0.3 to RIGHT * 0.15 to move it more left
+            chap_title.to_corner(UP + LEFT).shift(RIGHT * 0.15 + DOWN * 0.2)
+            
+            # Ensure title stays within left container horizontally
+            left_boundary = self.left_box.get_left()[0] + 0.05  # Reduced margin
+            if chap_title.get_left()[0] < left_boundary:
+                chap_title.shift(RIGHT * (left_boundary - chap_title.get_left()[0]))
+            
+            self.play(FadeIn(chap_title))
             chap_func(i, TOTAL_CHAPTERS)
-            self.play(FadeOut(chap_num))
+            self.play(FadeOut(chap_title))
             self.wait(0.2)
 
+        # Final fade out
         self.play(FadeOut(self.left_box, self.right_box, self.bottom_left_box, self.bottom_right_box))
+        self.play(FadeOut(left_grid, right_grid))
         self.wait(1)
 
-    # --- 3. Fonction de Présentation FINALE ---
-    def show_split(self, chap_number, total_chapters, left_mobs=None, right_mobs=None, bottom_text="", wait=2.5):
+    def create_alignment_grid(self, container, grid_spacing=0.5):
+        """Create a subtle alignment grid for a container"""
+        grid = VGroup()
+        
+        # Get container dimensions and position
+        width = container.width * 0.95
+        height = container.height * 0.95
+        center = container.get_center()
+        
+        # Create vertical grid lines
+        num_vertical = int(width / grid_spacing)
+        for i in range(-num_vertical//2, num_vertical//2 + 1):
+            x_pos = i * grid_spacing
+            line = Line(
+                start=center + UP * height/2 + RIGHT * x_pos,
+                end=center + DOWN * height/2 + RIGHT * x_pos,
+                color=GRAY_E,
+                stroke_width=0.5,
+                stroke_opacity=0.2
+            )
+            grid.add(line)
+        
+        # Create horizontal grid lines
+        num_horizontal = int(height / grid_spacing)
+        for i in range(-num_horizontal//2, num_horizontal//2 + 1):
+            y_pos = i * grid_spacing
+            line = Line(
+                start=center + LEFT * width/2 + UP * y_pos,
+                end=center + RIGHT * width/2 + UP * y_pos,
+                color=GRAY_E,
+                stroke_width=0.5,
+                stroke_opacity=0.2
+            )
+            grid.add(line)
+        
+        # Add center crosshair for alignment
+        center_cross = VGroup(
+            Line(
+                start=center + LEFT * 0.3,
+                end=center + RIGHT * 0.3,
+                color=GRAY_D,
+                stroke_width=1,
+                stroke_opacity=0.3
+            ),
+            Line(
+                start=center + DOWN * 0.3,
+                end=center + UP * 0.3,
+                color=GRAY_D,
+                stroke_width=1,
+                stroke_opacity=0.3
+            )
+        )
+        grid.add(center_cross)
+        
+        return grid
+
+    def display_chapter(self, chap_number, total_chapters, left_mobs=None, bottom_text="", wait=2.5):
+        """Display a chapter with proper grid alignment and container refresh"""
         mobs_to_animate = []
         all_mobs_to_fade = []
         
-        # --- A/B. Compartiments Supérieurs (Logique inchangée) ---
+        # --- Left Container: Math Formulas ---
         if left_mobs:
             left_group = VGroup(*left_mobs)
-            if left_group.width > self.max_upper_width: left_group.width = self.max_upper_width
-            if left_group.height > self.max_upper_height: left_group.height = self.max_upper_height
-            left_group.move_to(self.left_box.get_center())
-            mobs_to_animate.extend([Create(m) if isinstance(m, VMobject) else Write(m) for m in left_group])
-            all_mobs_to_fade.extend(left_mobs)
+            
+            # Scale to fit container
+            if left_group.width > self.max_upper_width or left_group.height > self.max_upper_height:
+                scale_factor = min(
+                    self.max_upper_width * 0.8 / left_group.width,
+                    self.max_upper_height * 0.8 / left_group.height
+                )
+                left_group.scale(scale_factor)
+            
+            left_group.move_to(self.left_box)
+            mobs_to_animate.append(Write(left_group))
+            all_mobs_to_fade.append(left_group)
 
-        if right_mobs:
-            right_group = VGroup(*right_mobs)
-            if right_group.width > self.max_upper_width: right_group.width = self.max_upper_width
-            if right_group.height > self.max_upper_height: right_group.height = self.max_upper_height
-            right_group.move_to(self.right_box.get_center())
-            mobs_to_animate.extend([Create(m) if isinstance(m, VMobject) else Write(m) for m in right_group])
-            all_mobs_to_fade.extend(right_mobs)
-
-        # --- C. Compartiment du Bas (Numéro X/39 + Commentaires) ---
-        
-        # 1. Numéro de Chapitre (dans la sous-boîte gauche)
+        # --- Bottom Left: Chapter Counter ---
         num_mob = Text(f"{chap_number}/{total_chapters}", font_size=self.numbering_font_size, color=BLACK)
-        # La hauteur du numéro reste limitée à 50% de la hauteur max du compartiment gauche
-        max_allowed_num_height = self.max_number_height * 0.5 
-        if num_mob.height > max_allowed_num_height: 
-             num_mob.height = max_allowed_num_height
-             
-        num_mob.move_to(self.bottom_left_box.get_center())
+        num_mob.move_to(self.bottom_left_box)
         mobs_to_animate.append(Write(num_mob))
         all_mobs_to_fade.append(num_mob)
 
-        # 2. Texte de Commentaire (dans la sous-boîte droite)
+        # --- Bottom Right: Explanation (2 lines, fixed font size) ---
         if bottom_text:
-            # MODIFICATION : Utilisation de Paragraph au lieu de Text
-            commentary = Paragraph(
-                bottom_text, 
-                font_size=self.commentary_font_size, 
-                color=BLACK,
-                line_spacing=1.2, 
-            )
+            # Split explanation into lines, limit to 2 lines
+            explanation_lines = bottom_text.split('\n')[:2]
             
-            # Ajustement de la largeur
-            if commentary.width > self.max_comment_width:
-                 commentary.width = self.max_comment_width
+            # Create explanation text with fixed font size
+            expl = VGroup()
+            for i, line in enumerate(explanation_lines):
+                line_text = Text(line, color=BLACK, font_size=self.commentary_font_size)
+                line_text.shift(DOWN * i * 0.6)  # Line spacing
+                expl.add(line_text)
             
-            # MODIFICATION : Suppression de la CONTRAINTE HAUTEUR 50%
-            # On conserve l'ajustement si jamais la hauteur dépasse la zone disponible
-            if commentary.height > self.max_comment_height:
-                commentary.height = self.max_comment_height
+            # Center the explanation group vertically
+            expl.arrange(DOWN, center=False, aligned_edge=LEFT)
+            expl.move_to(self.bottom_right_box)
             
-            # Positionnement : centrage vertical et alignement horizontal à GAUCHE de la zone.
-            commentary.move_to(self.bottom_right_box.get_center())
-            commentary.align_to(self.bottom_right_box.get_left(), LEFT).shift(RIGHT * (self.max_comment_width / 20)) # Petit décalage pour le padding
+            # Scale if too wide (but keep font size fixed by scaling group)
+            if expl.width > self.max_comment_width:
+                expl.scale_to_fit_width(self.max_comment_width * 0.9)
             
-            mobs_to_animate.append(Write(commentary))
-            all_mobs_to_fade.append(commentary)
+            # Position to align with left edge of container
+            expl.align_to(self.bottom_right_box.get_left(), LEFT)
+            expl.shift(RIGHT * 0.2)
+            
+            mobs_to_animate.append(Write(expl))
+            all_mobs_to_fade.append(expl)
 
-        # Animation
+        # --- Animate all content ---
         if mobs_to_animate:
             self.play(*mobs_to_animate, run_time=1.5)
             self.wait(wait)
             self.play(*[FadeOut(m) for m in all_mobs_to_fade])
 
-
-    # ====================== LES 39 CHAPITRES ADAPTÉS ======================
+    # ====================== THE 39 CHAPTERS WITH ENGLISH TITLES ======================
     
-    def chap_arithmetic(self, i, t):      self.show_split(i, t, left_mobs=[MathTex(r"485 + 237 = 722", color=BLACK)], bottom_text="Chapitre sur l'arithmétique de base.\nApprendre à manipuler efficacement les nombres entiers.")
-    def chap_fractions(self, i, t):        self.show_split(i, t, left_mobs=[MathTex(r"\frac{3}{4} + \frac{5}{6} = \frac{19}{24}", color=BLACK)], bottom_text="Opérations avec les fractions.\nEssentiel pour les rapports techniques.")
-    def chap_decimals(self, i, t):         self.show_split(i, t, left_mobs=[MathTex(r"0{,}125 \times 8 = 1{,}0", color=BLACK)], bottom_text="Multiplication et conversion de décimaux.\nImportant pour la précision des mesures.")
-    def chap_calculator(self, i, t):       self.show_split(i, t, left_mobs=[MathTex(r"12{,}5 \times 4{,}8 = 60", color=BLACK)], bottom_text="Maîtrise de la calculatrice scientifique.\nUtilisation des fonctions avancées.")
-    def chap_percentages(self, i, t):      self.show_split(i, t, left_mobs=[MathTex(r"15\% \text{ de } 80 = 12", color=BLACK)], bottom_text="Calcul des pourcentages.\nPour l'analyse de l'efficacité ou des tolérances.")
-    def chap_ratio(self, i, t):            self.show_split(i, t, left_mobs=[MathTex(r"3:5 \;\to\; 6:10", color=BLACK)], bottom_text="Comprendre les rapports et les proportions.\nBase pour l'échelle et la distribution.")
-    def chap_powers(self, i, t):           self.show_split(i, t, left_mobs=[MathTex(r"2^5 = 32 \quad ; \quad \sqrt{36} = 6", color=BLACK)], bottom_text="Exposants et radicaux.\nNécessaire pour les formules de puissance et de distance.")
-    def chap_units(self, i, t):            self.show_split(i, t, left_mobs=[MathTex(r"4{,}7\,k\Omega = 4700\,\Omega", color=BLACK)], bottom_text="Conversions d'unités SI.\nGérer les préfixes et les dimensions physiques.")
-    def chap_basic_algebra(self, i, t):    self.show_split(i, t, left_mobs=[MathTex(r"3x + 5 = 20", color=BLACK)], bottom_text="Introduction à la manipulation algébrique.\nRésoudre les expressions de base.")
-    def chap_further_algebra(self, i, t): self.show_split(i, t, left_mobs=[MathTex(r"(x+2)(x-3) = x^2 -x -6", color=BLACK)], bottom_text="Développement et factorisation de polynômes.\nPréparation aux équations complexes.")
-    def chap_simple_equations(self, i, t): self.show_split(i, t, left_mobs=[MathTex(r"5x - 13 = 27 \;\Rightarrow\; x=8", color=BLACK)], bottom_text="Résolution des équations à une variable.\nIsoler l'inconnue pour trouver la solution.")
-    def chap_transposing(self, i, t):      self.show_split(i, t, left_mobs=[MathTex(r"v = u + at \;\Rightarrow\; a = \frac{v-u}{t}", color=BLACK)], bottom_text="Transposition de formules.\nChanger l'objet de la formule pour une variable donnée.")
+    def chap_basic_arithmetic(self, i, t):      
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"485 + 237 = 722", color=BLACK)], 
+            bottom_text="Basic arithmetic operations.\nAddition, subtraction, multiplication, and division.")
     
-    def chap_simultaneous(self, i, t):     
-        eqs = VGroup(MathTex(r"2x+y=8", color=BLACK), MathTex(r"3x-y=7", color=BLACK)).arrange(DOWN)
-        sol = MathTex(r"x=3,\ y=2", color=BLACK).next_to(eqs, DOWN)
-        self.show_split(i, t, left_mobs=[eqs, sol], bottom_text="Résoudre des systèmes d'équations.\nUtilisé pour les points d'équilibre ou les réseaux électriques.")
-        
-    def chap_quadratic(self, i, t):        self.show_split(i, t, left_mobs=[MathTex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}", color=BLACK)], bottom_text="Formule quadratique.\nRésolution des équations de degré 2.")
-    def chap_logarithms(self, i, t):       self.show_split(i, t, left_mobs=[MathTex(r"\log_{10} 100 = 2", color=BLACK)], bottom_text="Propriétés des logarithmes.\nSimplifier les produits et les puissances complexes.")
-    def chap_exponential(self, i, t):      self.show_split(i, t, left_mobs=[MathTex(r"e^{0{,}693} \approx 2", color=BLACK)], bottom_text="Fonctions exponentielles.\nModéliser la croissance ou la décroissance naturelle.")
+    def chap_fractions(self, i, t):        
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"\frac{3}{4} + \frac{5}{6} = \frac{19}{24}", color=BLACK)], 
+            bottom_text="Operations with fractions.\nAddition, subtraction, multiplication, and division.")
     
-    def chap_straight_line(self, i, t):    
-        axes = Axes(x_range=[-4,4],y_range=[-2,10], axis_config={"color":BLACK}); g = axes.plot(lambda x:2*x+3,color=BLUE); l = axes.get_graph_label(g,"y=2x+3", color=BLACK)
-        self.show_split(i, t, right_mobs=[axes,g,l], left_mobs=[MathTex(r"y = mx+c", color=BLACK)], bottom_text="Tracé et analyse des lignes droites.\nDéterminer la pente (m) et l'ordonnée à l'origine (c).")
-        
-    def chap_non_linear_to_linear(self, i, t): self.show_split(i, t, left_mobs=[MathTex(r"y = kx^n \;\Rightarrow\; \log y = \log k + n \log x", color=BLACK)], bottom_text="Transformer des relations non linéaires.\nUtiliser les logs pour les rendre linéaires.")
+    def chap_decimals(self, i, t):         
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"0.125 \times 8 = 1.0", color=BLACK)], 
+            bottom_text="Decimal arithmetic.\nMultiplication and conversion of decimals.")
     
-    def chap_graphical_solution(self, i, t): 
-        axes = Axes(x_range=[-2,5],y_range=[-1,6], axis_config={"color":BLACK}); g1 = axes.plot(lambda x:x+1,color=RED); g2 = axes.plot(lambda x:4-x,color=GREEN); d = Dot(axes.c2p(2.5,2.5),color=YELLOW)
-        sol = MathTex(r"\text{Solution : } x=2{,}5", color=BLACK)
-        self.show_split(i, t, right_mobs=[axes,g1,g2,d], left_mobs=[sol], bottom_text="Trouver les solutions par intersection.\nMéthode graphique pour la résolution d'équations.")
-        
-    def chap_angles_triangles(self, i, t): 
-        tri = Triangle(color=BLACK); labs = VGroup(*[Tex("60°", color=BLACK).next_to(tri.get_vertices()[i],DOWN if i<2 else UP) for i in range(3)])
-        self.show_split(i, t, right_mobs=[tri,labs], left_mobs=[MathTex(r"A+B+C = 180^\circ", color=BLACK)], bottom_text="Propriétés des angles et géométrie.\nSomme des angles internes du triangle.")
-        
-    def chap_trigonometry(self, i, t):     self.show_split(i, t, left_mobs=[MathTex(r"\sin \theta = \frac{\text{opposé}}{\text{hypoténuse}}", color=BLACK)], bottom_text="Rapports trigonométriques SOH CAH TOA.\nApplications aux triangles rectangles.")
+    def chap_using_calculator(self, i, t):       
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"12.5 \times 4.8 = 60", color=BLACK)], 
+            bottom_text="Scientific calculator techniques.\nUsing advanced functions efficiently.")
     
-    def chap_trig_waveforms(self, i, t):   
-        axes = Axes(x_range=[0,4*PI,PI],y_range=[-1.5,1.5], axis_config={"color":BLACK}); w = axes.plot(np.sin,color=RED)
-        self.show_split(i, t, right_mobs=[axes,w], left_mobs=[MathTex(r"y = A \sin(\omega t)", color=BLACK)], bottom_text="Formes d'onde et fonctions trigonométriques.\nModéliser les phénomènes périodiques (AC).")
-        
-    def chap_non_right_triangles(self, i, t): self.show_split(i, t, left_mobs=[MathTex(r"\frac{a}{\sin A} = \frac{b}{\sin B} = \frac{c}{\sin C}", color=BLACK)], bottom_text="Loi des sinus.\nRésolution de triangles non rectangles.")
+    def chap_percentages(self, i, t):      
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"15\% \text{ of } 80 = 12", color=BLACK)], 
+            bottom_text="Percentage calculations.\nFinding percentages, increases, and decreases.")
     
-    def chap_coordinates(self, i, t):      
-        axes = Axes(x_range=[-4,4],y_range=[-4,4], axis_config={"color":BLACK}); d = Dot(axes.c2p(2,1),color=YELLOW); l = Tex("(2,1)", color=BLACK).next_to(d,UR)
-        self.show_split(i, t, right_mobs=[axes,d,l], left_mobs=[Tex("Distance formule", color=BLACK)], bottom_text="Systèmes de coordonnées et distance.\nLocalisation et déplacement de points.")
-        
-    def chap_areas(self, i, t):            
-        rect = Rectangle(width=4,height=2.5,color=BLUE); lab = MathTex(r"A = l \times w", color=BLACK).next_to(rect,DOWN)
-        self.show_split(i, t, right_mobs=[rect,lab], left_mobs=[MathTex(r"A = 10 \text{ unités}^2", color=BLACK)], bottom_text="Calcul d'aires.\nSurface des formes 2D standards.")
-        
-    def chap_circle(self, i, t):           
-        c = Circle(radius=2,color=GREEN); lab = MathTex(r"C = 2\pi r", color=BLACK).next_to(c,RIGHT)
-        self.show_split(i, t, right_mobs=[c,lab], left_mobs=[MathTex(r"A = \pi r^2", color=BLACK)], bottom_text="Propriétés du cercle.\nAire et circonférence.")
-        
-    def chap_volumes(self, i, t):          
-        cube = Cube(side_length=2,fill_opacity=0.7,stroke_color=TEAL); lab = MathTex(r"V = a^3", color=BLACK).next_to(cube,DOWN)
-        self.show_split(i, t, right_mobs=[cube,lab], left_mobs=[MathTex(r"V = 8 \text{ unités}^3", color=BLACK)], bottom_text="Calcul de volumes 3D.\nEspace occupé par un objet solide.")
-        
-    def chap_irregular(self, i, t):        
-        poly = Polygon(*[[x,y,0]for x,y in[(0,0),(3,0),(4,2),(1,3)]],color=ORANGE); lab = Tex("Règle de Simpson", color=BLACK).next_to(poly,DOWN)
-        self.show_split(i, t, right_mobs=[poly,lab], left_mobs=[Tex("Calcul d'Aire", color=BLACK)], bottom_text="Méthodes d'intégration numérique.\nEstimer l'aire de formes irrégulières.")
-        
+    def chap_ratio_and_proportion(self, i, t):            
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"3:5 \;\to\; 6:10", color=BLACK)], 
+            bottom_text="Ratios and proportions.\nUnderstanding scale and distribution.")
+    
+    def chap_powers_roots_and_laws_of_indices(self, i, t):           
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"2^5 = 32 \quad ; \quad \sqrt{36} = 6", color=BLACK)], 
+            bottom_text="Exponents, roots, and laws of indices.\nPower formulas and radical expressions.")
+    
+    def chap_units_prefixes_and_engineering_notation(self, i, t):            
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"4.7\,\text{k}\Omega = 4700\,\Omega", color=BLACK)], 
+            bottom_text="SI unit conversions.\nWorking with prefixes and engineering notation.")
+    
+    def chap_basic_algebra(self, i, t):    
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"3x + 5 = 20", color=BLACK)], 
+            bottom_text="Basic algebraic manipulation.\nSolving expressions and equations.")
+    
+    def chap_further_algebra(self, i, t): 
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"(x+2)(x-3) = x^2 - x - 6", color=BLACK)], 
+            bottom_text="Polynomial expansion and factorization.\nPreparing for complex equations.")
+    
+    def chap_solving_simple_equations(self, i, t): 
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"5x - 13 = 27 \;\Rightarrow\; x=8", color=BLACK)], 
+            bottom_text="Solving single variable equations.\nIsolating the unknown to find solutions.")
+    
+    def chap_transposing_formulae(self, i, t):      
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"v = u + at \;\Rightarrow\; a = \frac{v-u}{t}", color=BLACK)], 
+            bottom_text="Transposing formulas.\nRearranging equations to solve for specific variables.")
+    
+    def chap_solving_simultaneous_equations(self, i, t):     
+        eqs = VGroup(
+            MathTex(r"2x + y = 8", color=BLACK), 
+            MathTex(r"3x - y = 7", color=BLACK)
+        ).arrange(DOWN, buff=0.5)
+        sol = MathTex(r"x = 3,\; y = 2", color=BLACK).next_to(eqs, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[eqs, sol], 
+            bottom_text="Solving systems of equations.\nFinding intersection points of linear equations.")
+    
+    def chap_solving_quadratic_equations(self, i, t):        
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}", color=BLACK)], 
+            bottom_text="Quadratic formula.\nSolving second-degree equations.")
+    
+    def chap_logarithms(self, i, t):       
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"\log_{10} 100 = 2", color=BLACK)], 
+            bottom_text="Properties of logarithms.\nSimplifying products and complex powers.")
+    
+    def chap_exponential_functions(self, i, t):      
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"e^{0.693} \approx 2", color=BLACK)], 
+            bottom_text="Exponential functions.\nModeling natural growth or decay.")
+    
+    def chap_straight_line_graphs(self, i, t):    
+        eq = MathTex(r"y = mx + c", color=BLACK)
+        example = MathTex(r"y = 2x + 3", color=BLACK).next_to(eq, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[eq, example],
+            bottom_text="Equation of a straight line.\nSlope (m) and y-intercept (c).")
+    
+    def chap_graphs_reducing_non_linear_laws_to_linear_form(self, i, t): 
+        self.display_chapter(i, t, 
+            left_mobs=[MathTex(r"y = kx^n \;\Rightarrow\; \log y = \log k + n \log x", color=BLACK)], 
+            bottom_text="Linearizing non-linear relationships.\nUsing logarithms to create linear graphs.")
+    
+    def chap_graphical_solution_of_equations(self, i, t): 
+        eqs = VGroup(
+            MathTex(r"y = x + 1", color=BLACK),
+            MathTex(r"y = 4 - x", color=BLACK)
+        ).arrange(DOWN, buff=0.3)
+        sol = MathTex(r"\text{Intersection at } x = 1.5", color=BLACK).next_to(eqs, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[eqs, sol],
+            bottom_text="Graphical solution methods.\nFinding solutions through intersection points.")
+    
+    def chap_angles_and_triangles(self, i, t): 
+        eq = MathTex(r"A + B + C = 180^\circ", color=BLACK)
+        example = MathTex(r"60^\circ + 60^\circ + 60^\circ = 180^\circ", color=BLACK).next_to(eq, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[eq, example],
+            bottom_text="Angle properties of triangles.\nSum of interior angles equals 180 degrees.")
+    
+    def chap_introduction_to_trigonometry(self, i, t):     
+        soh = MathTex(r"\sin\theta = \frac{\text{opposite}}{\text{hypotenuse}}", color=BLACK)
+        cah = MathTex(r"\cos\theta = \frac{\text{adjacent}}{\text{hypotenuse}}", color=BLACK).next_to(soh, DOWN, buff=0.3)
+        toa = MathTex(r"\tan\theta = \frac{\text{opposite}}{\text{adjacent}}", color=BLACK).next_to(cah, DOWN, buff=0.3)
+        self.display_chapter(i, t, 
+            left_mobs=[soh, cah, toa],
+            bottom_text="Trigonometric ratios SOH CAH TOA.\nApplications to right-angled triangles.")
+    
+    def chap_trigonometric_waveforms(self, i, t):   
+        eq = MathTex(r"y = A \sin(\omega t + \phi)", color=BLACK)
+        example = MathTex(r"A = 1,\; \omega = 2\pi,\; \phi = 0", color=BLACK).next_to(eq, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[eq, example],
+            bottom_text="Trigonometric waveforms.\nModeling periodic phenomena like AC currents.")
+    
+    def chap_non_right_angled_triangles_and_applications(self, i, t): 
+        law_of_sines = MathTex(r"\frac{a}{\sin A} = \frac{b}{\sin B} = \frac{c}{\sin C}", color=BLACK)
+        law_of_cosines = MathTex(r"c^2 = a^2 + b^2 - 2ab\cos C", color=BLACK).next_to(law_of_sines, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[law_of_sines, law_of_cosines],
+            bottom_text="Solving non-right-angled triangles.\nUsing sine rule and cosine rule.")
+    
+    def chap_cartesian_and_polar_coordinates(self, i, t):      
+        cartesian = MathTex(r"(x, y) = (2, 3)", color=BLACK)
+        polar = MathTex(r"(r, \theta) = (\sqrt{13}, 56.3^\circ)", color=BLACK).next_to(cartesian, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[cartesian, polar],
+            bottom_text="Coordinate system conversions.\nCartesian to polar and vice versa.")
+    
+    def chap_areas_of_common_shapes(self, i, t):            
+        rectangle = MathTex(r"A_{\text{rect}} = l \times w", color=BLACK)
+        triangle = MathTex(r"A_{\text{tri}} = \frac{1}{2} b \times h", color=BLACK).next_to(rectangle, DOWN, buff=0.3)
+        circle = MathTex(r"A_{\text{circle}} = \pi r^2", color=BLACK).next_to(triangle, DOWN, buff=0.3)
+        self.display_chapter(i, t, 
+            left_mobs=[rectangle, triangle, circle],
+            bottom_text="Area formulas for common shapes.\nRectangle, triangle, and circle areas.")
+    
+    def chap_the_circle_and_its_properties(self, i, t):           
+        circumference = MathTex(r"C = 2\pi r", color=BLACK)
+        area = MathTex(r"A = \pi r^2", color=BLACK).next_to(circumference, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[circumference, area],
+            bottom_text="Properties of circles.\nCircumference and area calculations.")
+    
+    def chap_volumes_and_surface_areas_of_common_solids(self, i, t):          
+        cube_vol = MathTex(r"V_{\text{cube}} = a^3", color=BLACK)
+        cube_sa = MathTex(r"SA_{\text{cube}} = 6a^2", color=BLACK).next_to(cube_vol, DOWN, buff=0.3)
+        sphere_vol = MathTex(r"V_{\text{sphere}} = \frac{4}{3}\pi r^3", color=BLACK).next_to(cube_sa, DOWN, buff=0.3)
+        self.display_chapter(i, t, 
+            left_mobs=[cube_vol, cube_sa, sphere_vol],
+            bottom_text="Volume and surface area formulas.\nFor cubes, spheres, and other solids.")
+    
+    def chap_irregular_areas_and_volumes_and_mean_values(self, i, t):        
+        simpson = MathTex(r"A \approx \frac{h}{3}[y_0 + 4y_1 + 2y_2 + 4y_3 + y_4]", color=BLACK)
+        self.display_chapter(i, t, 
+            left_mobs=[simpson],
+            bottom_text="Numerical integration methods.\nSimpson's rule for irregular areas.")
+    
     def chap_vectors(self, i, t):          
-        v1 = Arrow(ORIGIN,2.5*RIGHT+0.8*UP,color=RED); v2 = Arrow(ORIGIN,0.8*RIGHT+2*UP,color=BLUE); res = Arrow(ORIGIN,v1.get_end()+v2.get_end(),color=YELLOW)
-        self.show_split(i, t, right_mobs=[v1,v2,res], left_mobs=[MathTex(r"\mathbf{A} + \mathbf{B}", color=BLACK)], bottom_text="Addition vectorielle.\nComposition des forces ou des vitesses.")
+        vector_add = MathTex(r"\mathbf{A} + \mathbf{B} = (a_x+b_x, a_y+b_y)", color=BLACK)
+        magnitude = MathTex(r"|\mathbf{A}| = \sqrt{a_x^2 + a_y^2}", color=BLACK).next_to(vector_add, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[vector_add, magnitude],
+            bottom_text="Vector operations.\nAddition, subtraction, and magnitude calculations.")
+    
+    def chap_methods_of_adding_alternating_waveforms(self, i, t): 
+        sine_sum = MathTex(r"A\sin(\omega t) + B\sin(\omega t + \phi)", color=BLACK)
+        phasor = MathTex(r"R\sin(\omega t + \theta)", color=BLACK).next_to(sine_sum, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[sine_sum, phasor],
+            bottom_text="Adding alternating waveforms.\nUsing phasor diagrams for AC analysis.")
+    
+    def chap_presentation_of_statistical_data(self, i, t): 
+        data = MathTex(r"\text{Data: } 5, 8, 12, 7, 3, 9, 6", color=BLACK)
+        stats = MathTex(r"\text{Bar charts, histograms, pie charts}", color=BLACK).next_to(data, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[data, stats],
+            bottom_text="Visual presentation of data.\nBar charts, histograms, and pie charts.")
+    
+    def chap_mean_median_mode_and_standard_deviation(self, i, t): 
+        mean = MathTex(r"\text{Mean} = \frac{\sum x}{n}", color=BLACK)
+        median = MathTex(r"\text{Median} = \text{middle value}", color=BLACK).next_to(mean, DOWN, buff=0.3)
+        std_dev = MathTex(r"\sigma = \sqrt{\frac{\sum (x-\mu)^2}{n}}", color=BLACK).next_to(median, DOWN, buff=0.3)
+        self.display_chapter(i, t, 
+            left_mobs=[mean, median, std_dev],
+            bottom_text="Measures of central tendency.\nMean, median, mode, and standard deviation.")
+    
+    def chap_probability(self, i, t):      
+        union = MathTex(r"P(A \cup B) = P(A) + P(B) - P(A \cap B)", color=BLACK)
+        conditional = MathTex(r"P(A|B) = \frac{P(A \cap B)}{P(B)}", color=BLACK).next_to(union, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[union, conditional],
+            bottom_text="Probability principles.\nCalculating chances of events occurring.")
+    
+    def chap_introduction_to_differentiation(self, i, t): 
+        derivative = MathTex(r"\frac{d}{dx}(x^n) = nx^{n-1}", color=BLACK)
+        example = MathTex(r"\frac{d}{dx}(3x^2 - 4x + 1) = 6x - 4", color=BLACK).next_to(derivative, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[derivative, example],
+            bottom_text="Differentiation (derivatives).\nFinding the slope of curves.")
+    
+    def chap_introduction_to_integration(self, i, t):      
+        integral = MathTex(r"\int x^n dx = \frac{x^{n+1}}{n+1} + C", color=BLACK)
+        example = MathTex(r"\int (4x^3 - 2x) dx = x^4 - x^2 + C", color=BLACK).next_to(integral, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[integral, example],
+            bottom_text="Integration (antiderivatives).\nCalculating areas under curves.")
+    
+    def chap_number_sequences(self, i, t):        
+        arithmetic = MathTex(r"a_n = a_1 + (n-1)d", color=BLACK)
+        example = MathTex(r"2, 5, 8, 11, \dots \quad a_n = 3n - 1", color=BLACK).next_to(arithmetic, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[arithmetic, example],
+            bottom_text="Number sequences and series.\nArithmetic and geometric progressions.")
+    
+    def chap_binary_octal_and_hexadecimal_numbers(self, i, t):     
+        binary = MathTex(r"1011_2 = 11_{10}", color=BLACK)
+        hexa = MathTex(r"B_{16} = 11_{10}", color=BLACK).next_to(binary, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[binary, hexa],
+            bottom_text="Number base conversions.\nBinary, octal, and hexadecimal systems.")
+    
+    def chap_inequalities(self, i, t):     
+        inequality = MathTex(r"-2 < x \leq 5", color=BLACK)
+        solution = MathTex(r"x \in (-2, 5]", color=BLACK).next_to(inequality, DOWN, buff=0.5)
+        self.display_chapter(i, t, 
+            left_mobs=[inequality, solution],
+            bottom_text="Solving inequalities.\nRepresenting solutions on number lines.")
+    
+    def chap_graphs_with_logarithmic_scales(self, i, t):
+        log_scale = MathTex(r"\log_{10}(xy) = \log_{10}x + \log_{10}y", color=BLACK)
+        example = MathTex(r"y = 10^x \;\Rightarrow\; \log y = x", color=BLACK).next_to(log_scale, DOWN, buff=0.5)
         
-    def chap_alternating_waveforms(self, i, t): 
-        axes = Axes(x_range=[0,0.04,0.01],y_range=[-350,350,100], axis_config={"color":BLACK}); w = axes.plot(lambda t:325*np.sin(2*PI*50*t),color=PURPLE)
-        self.show_split(i, t, right_mobs=[axes,w], left_mobs=[MathTex(r"v = V_m \sin(\omega t)", color=BLACK)], bottom_text="Analyse des courants alternatifs.\nFréquence, amplitude et phase.")
-        
-    def chap_stat_presentation(self, i, t): 
-        # CORRECTION FINALE DU GRAPHIQUE 31 :
-        # Utilisation de numbers_to_include et include_numbers=True pour forcer les graduations
-        chart = BarChart(
-            values=[5,8,12,7,3],
-            bar_names=["A","B","C","D","E"],
-            y_range=[0,15,5],
-            axis_config={"color": BLACK, "include_numbers": True}, 
-            y_axis_config={"include_numbers": True, "numbers_to_include": range(0, 16, 5)} # Force les numéros
-        )
-        self.show_split(i, t, right_mobs=[chart], left_mobs=[Tex("Diagramme à barres", color=BLACK)], bottom_text="Présentation visuelle des données.\nDiagrammes en barres et histogrammes.")
-        
-    def chap_mean_median_mode(self, i, t): self.show_split(i, t, left_mobs=[MathTex(r"2,3,3,5,7,10 \;\to\; \text{moyenne}=5", color=BLACK)], bottom_text="Mesures de tendance centrale.\nCalcul de la moyenne, médiane et mode.")
-    def chap_probability(self, i, t):      self.show_split(i, t, left_mobs=[MathTex(r"P(A \cup B) = P(A)+P(B)-P(A \cap B)", color=BLACK)], bottom_text="Principes de probabilité.\nCalculer la chance qu'un événement se produise.")
-    def chap_differentiation(self, i, t): self.show_split(i, t, left_mobs=[MathTex(r"f(x)=3x^2-4x+1 \;\Rightarrow\; f'(x)=6x-4", color=BLACK)], bottom_text="Différentiation (dérivation).\nTrouver la pente d'une courbe à un point donné.")
-    def chap_integration(self, i, t):      self.show_split(i, t, left_mobs=[MathTex(r"\int (4x^3-2x)\,dx = x^4 - x^2 + C", color=BLACK)], bottom_text="Intégration.\nCalculer l'aire sous une courbe.")
-    def chap_sequences(self, i, t):        self.show_split(i, t, left_mobs=[MathTex(r"2,5,8,11,\dots \quad a_n=3n-1", color=BLACK)], bottom_text="Séquences et séries.\nTrouver la formule pour le $n$-ième terme.")
-    def chap_number_bases(self, i, t):     self.show_split(i, t, left_mobs=[MathTex(r"1011_2 = 11_{10} = B_{16}", color=BLACK)], bottom_text="Conversion des bases numériques.\nBases 2, 10 et 16.")
-    def chap_inequalities(self, i, t):     self.show_split(i, t, left_mobs=[MathTex(r"-2 < x \leq 5", color=BLACK)], bottom_text="Résolution d'inégalités.\nReprésenter la solution sur une ligne numérique.")
-
-    def chap_log_scales(self, i, t):
-        graph_width = self.max_upper_width 
-        graph_height = self.max_upper_height
-        
-        axes = Axes(
-            x_range=[0.1, 1000], y_range=[0, 10, 2],
-            x_length=graph_width, y_length=graph_height,
-            x_axis_config={"scaling": LogBase(base=10), "color":BLACK}, y_axis_config={"color":BLACK}, tips=False,
-        ) 
-        
-        graph = axes.plot(lambda x: 3 * np.log10(x), color=GOLD)
-        label = axes.get_graph_label(graph, r"y = 3\log_{10} x", color=BLACK)
-        calc = MathTex(r"\log_{10} (xy) = \log_{10} x + \log_{10} y", color=BLACK)
-        
-        self.show_split(
+        self.display_chapter(
             i, t,
-            left_mobs=[calc], 
-            right_mobs=[axes, graph, label], 
-            bottom_text="Utilisation des échelles logarithmiques.\nCompression de données sur une large plage de valeurs.",
+            left_mobs=[log_scale, example], 
+            bottom_text="Logarithmic scale graphs.\nCompressing data over wide value ranges.",
             wait=3
         )
