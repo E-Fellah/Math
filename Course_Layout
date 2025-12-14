@@ -222,34 +222,5 @@ class MathProblemSolverTemplate(Scene):
         self.play(Create(visual_group))
         self.play(Write(expl))
         
-        # Show that objects can be aligned to the grid
-        # Flash the grid lines where the math objects are aligned
-        self.wait(0.5)
-        
-        # Show alignment hints (subtle)
-        math_center = math_group.get_center()
-        visual_center = visual_group.get_center()
-        
-        # Create alignment indicators
-        math_alignment = VGroup(
-            Circle(radius=0.05, color=BLUE_C, fill_opacity=0.3, stroke_width=0).move_to(math_center),
-            Text("Aligned", font_size=12, color=BLUE_D).next_to(math_center, UP, buff=0.1)
-        )
-        visual_alignment = VGroup(
-            Circle(radius=0.05, color=RED_C, fill_opacity=0.3, stroke_width=0).move_to(visual_center),
-            Text("Aligned", font_size=12, color=RED_D).next_to(visual_center, UP, buff=0.1)
-        )
-        
-        self.play(
-            FadeIn(math_alignment, scale=0.5),
-            FadeIn(visual_alignment, scale=0.5),
-            run_time=0.5
-        )
-        self.wait(0.3)
-        self.play(
-            FadeOut(math_alignment),
-            FadeOut(visual_alignment),
-            run_time=0.3
-        )
-        
-        self.wait(2)
+        # Removed the "Aligned" text pop-ups - just keep the subtle grids
+        self.wait(2.5)
