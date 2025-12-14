@@ -17,6 +17,10 @@ class EngineeringMathWithGrids(Scene):
         lower_height = total_height * LOWER_FRACTION
         upper_box_width = total_width / 2 - 0.1
         
+        # Grid configuration
+        self.grid_spacing = 0.5  # Spacing between grid points
+        self.grid_visible = True  # Toggle for grid visibility
+        
         # Padding & Scaling Factors
         PADDING_FACTOR = 0.95
         NUMBER_FRACTION = 1/8  
@@ -90,16 +94,23 @@ class EngineeringMathWithGrids(Scene):
             Create(self.bottom_right_box)
         )
 
-        # --- Create alignment grids for top containers ---
-        left_grid = self.create_alignment_grid(self.left_box, grid_spacing=0.3)
-        right_grid = self.create_alignment_grid(self.right_box, grid_spacing=0.3)
+        # --- Create functional coordinate grids for top containers ---
+        left_grid = self.create_coordinate_grid(self.left_box, self.grid_spacing)
+        right_grid = self.create_coordinate_grid(self.right_box, self.grid_spacing)
         
-        # Add grids to containers
-        self.play(
-            FadeIn(left_grid, run_time=0.5, lag_ratio=0.1, rate_func=rate_functions.ease_in_out_sine),
-            FadeIn(right_grid, run_time=0.5, lag_ratio=0.1, rate_func=rate_functions.ease_in_out_sine)
-        )
-
+        # Add coordinate systems to containers
+        if self.grid_visible:
+            self.play(
+                FadeIn(left_grid, run_time=0.5),
+                FadeIn(right_grid, run_time=0.5)
+            )
+        
+        # Store grids for later use
+        self.left_grid = left_grid
+        self.right_grid = right_grid
+        self.left_grid_points = self.extract_grid_points(self.left_box, self.grid_spacing)
+        self.right_grid_points = self.extract_grid_points(self.right_box, self.grid_spacing)
+        
         # --- 2. Chapter Sequence ---
         chapters = [
             self.chap_basic_arithmetic, self.chap_fractions, self.chap_decimals, 
@@ -169,11 +180,11 @@ class EngineeringMathWithGrids(Scene):
 
         # Final fade out
         self.play(FadeOut(self.left_box, self.right_box, self.bottom_left_box, self.bottom_right_box))
-        self.play(FadeOut(left_grid, right_grid))
+        self.play(FadeOut(self.left_grid, self.right_grid))
         self.wait(1)
 
-    def create_alignment_grid(self, container, grid_spacing=0.5):
-        """Create a subtle alignment grid for a container"""
+    def create_coordinate_grid(self, container, spacing=0.5):
+        """Create a functional coordinate grid with snapping points"""
         grid = VGroup()
         
         # Get container dimensions and position
@@ -181,55 +192,152 @@ class EngineeringMathWithGrids(Scene):
         height = container.height * 0.95
         center = container.get_center()
         
-        # Create vertical grid lines
-        num_vertical = int(width / grid_spacing)
-        for i in range(-num_vertical//2, num_vertical//2 + 1):
-            x_pos = i * grid_spacing
+        # Calculate number of grid points
+        num_x = int(width / spacing)
+        num_y = int(height / spacing)
+        
+        # Create grid lines
+        # Vertical lines
+        for i in range(-num_x//2, num_x//2 + 1):
+            x_pos = i * spacing
             line = Line(
                 start=center + UP * height/2 + RIGHT * x_pos,
                 end=center + DOWN * height/2 + RIGHT * x_pos,
-                color=GRAY_E,
-                stroke_width=0.5,
-                stroke_opacity=0.2
+                color=GRAY_D,
+                stroke_width=0.8,
+                stroke_opacity=0.15
             )
             grid.add(line)
         
-        # Create horizontal grid lines
-        num_horizontal = int(height / grid_spacing)
-        for i in range(-num_horizontal//2, num_horizontal//2 + 1):
-            y_pos = i * grid_spacing
+        # Horizontal lines
+        for i in range(-num_y//2, num_y//2 + 1):
+            y_pos = i * spacing
             line = Line(
                 start=center + LEFT * width/2 + UP * y_pos,
                 end=center + RIGHT * width/2 + UP * y_pos,
-                color=GRAY_E,
-                stroke_width=0.5,
-                stroke_opacity=0.2
+                color=GRAY_D,
+                stroke_width=0.8,
+                stroke_opacity=0.15
             )
             grid.add(line)
         
-        # Add center crosshair for alignment
+        # Create grid intersection points (small dots for snapping)
+        for i in range(-num_x//2, num_x//2 + 1):
+            for j in range(-num_y//2, num_y//2 + 1):
+                x_pos = i * spacing
+                y_pos = j * spacing
+                
+                # Create a small dot at intersection
+                dot = Dot(
+                    point=center + RIGHT * x_pos + UP * y_pos,
+                    radius=0.02,
+                    color=BLUE_E,
+                    fill_opacity=0.4
+                )
+                grid.add(dot)
+        
+        # Add center axes for reference
+        x_axis = Line(
+            start=center + LEFT * width/2,
+            end=center + RIGHT * width/2,
+            color=RED_D,
+            stroke_width=1.5,
+            stroke_opacity=0.3
+        )
+        y_axis = Line(
+            start=center + DOWN * height/2,
+            end=center + UP * height/2,
+            color=RED_D,
+            stroke_width=1.5,
+            stroke_opacity=0.3
+        )
+        grid.add(x_axis, y_axis)
+        
+        # Add center crosshair
         center_cross = VGroup(
             Line(
-                start=center + LEFT * 0.3,
-                end=center + RIGHT * 0.3,
-                color=GRAY_D,
-                stroke_width=1,
-                stroke_opacity=0.3
+                start=center + LEFT * 0.15,
+                end=center + RIGHT * 0.15,
+                color=RED_D,
+                stroke_width=2,
+                stroke_opacity=0.5
             ),
             Line(
-                start=center + DOWN * 0.3,
-                end=center + UP * 0.3,
-                color=GRAY_D,
-                stroke_width=1,
-                stroke_opacity=0.3
+                start=center + DOWN * 0.15,
+                end=center + UP * 0.15,
+                color=RED_D,
+                stroke_width=2,
+                stroke_opacity=0.5
             )
         )
         grid.add(center_cross)
         
         return grid
 
-    def display_chapter(self, chap_number, total_chapters, left_mobs=None, bottom_text="", wait=2.5):
-        """Display a chapter with proper grid alignment and container refresh"""
+    def extract_grid_points(self, container, spacing):
+        """Extract all grid point coordinates for snapping"""
+        width = container.width * 0.95
+        height = container.height * 0.95
+        center = container.get_center()
+        
+        num_x = int(width / spacing)
+        num_y = int(height / spacing)
+        
+        grid_points = []
+        for i in range(-num_x//2, num_x//2 + 1):
+            for j in range(-num_y//2, num_y//2 + 1):
+                x_pos = i * spacing
+                y_pos = j * spacing
+                point = center + RIGHT * x_pos + UP * y_pos
+                grid_points.append({
+                    'coords': (i, j),  # Grid coordinates
+                    'position': point,  # Actual position
+                    'x': x_pos,
+                    'y': y_pos
+                })
+        
+        return grid_points
+
+    def snap_to_grid(self, mobject, container, grid_points=None):
+        """Snap an object to the nearest grid point"""
+        if grid_points is None:
+            if container == self.left_box:
+                grid_points = self.left_grid_points
+            else:
+                grid_points = self.right_grid_points
+        
+        # Get object's current position
+        current_pos = mobject.get_center()
+        
+        # Find nearest grid point
+        nearest_point = min(
+            grid_points,
+            key=lambda p: np.linalg.norm(p['position'] - current_pos)
+        )
+        
+        # Move object to grid point
+        mobject.move_to(nearest_point['position'])
+        
+        return mobject, nearest_point['coords']
+
+    def hang_at_coordinates(self, mobject, container, grid_x, grid_y):
+        """Place an object at specific grid coordinates"""
+        if container == self.left_box:
+            grid_points = self.left_grid_points
+        else:
+            grid_points = self.right_grid_points
+        
+        # Find point with given coordinates
+        for point in grid_points:
+            if point['coords'] == (grid_x, grid_y):
+                mobject.move_to(point['position'])
+                return mobject, point['coords']
+        
+        # If exact coordinates not found, snap to nearest
+        return self.snap_to_grid(mobject, container, grid_points)
+
+    def display_chapter(self, chap_number, total_chapters, left_mobs=None, bottom_text="", wait=2.5, grid_coords=(0, 0)):
+        """Display a chapter with objects snapped to specific grid coordinates"""
         mobs_to_animate = []
         all_mobs_to_fade = []
         
@@ -245,7 +353,15 @@ class EngineeringMathWithGrids(Scene):
                 )
                 left_group.scale(scale_factor)
             
-            left_group.move_to(self.left_box)
+            # Hang at specific grid coordinates (default is (0,0) - center)
+            left_group, actual_coords = self.hang_at_coordinates(
+                left_group, self.left_box, grid_coords[0], grid_coords[1]
+            )
+            
+            # Add debug text to show grid coordinates (optional)
+            # coord_text = Text(f"Grid: {actual_coords}", font_size=14, color=BLUE).next_to(left_group, DOWN, buff=0.1)
+            # left_group.add(coord_text)
+            
             mobs_to_animate.append(Write(left_group))
             all_mobs_to_fade.append(left_group)
 
@@ -255,27 +371,21 @@ class EngineeringMathWithGrids(Scene):
         mobs_to_animate.append(Write(num_mob))
         all_mobs_to_fade.append(num_mob)
 
-        # --- Bottom Right: Explanation (2 lines, fixed font size) ---
+        # --- Bottom Right: Explanation ---
         if bottom_text:
-            # Split explanation into lines, limit to 2 lines
             explanation_lines = bottom_text.split('\n')[:2]
-            
-            # Create explanation text with fixed font size
             expl = VGroup()
             for i, line in enumerate(explanation_lines):
                 line_text = Text(line, color=BLACK, font_size=self.commentary_font_size)
-                line_text.shift(DOWN * i * 0.6)  # Line spacing
+                line_text.shift(DOWN * i * 0.6)
                 expl.add(line_text)
             
-            # Center the explanation group vertically
             expl.arrange(DOWN, center=False, aligned_edge=LEFT)
             expl.move_to(self.bottom_right_box)
             
-            # Scale if too wide (but keep font size fixed by scaling group)
             if expl.width > self.max_comment_width:
                 expl.scale_to_fit_width(self.max_comment_width * 0.9)
             
-            # Position to align with left edge of container
             expl.align_to(self.bottom_right_box.get_left(), LEFT)
             expl.shift(RIGHT * 0.2)
             
@@ -289,66 +399,79 @@ class EngineeringMathWithGrids(Scene):
             self.play(*[FadeOut(m) for m in all_mobs_to_fade])
 
     # ====================== THE 39 CHAPTERS WITH ENGLISH TITLES ======================
+    # Now all chapters will automatically snap to the center (0,0) by default
     
     def chap_basic_arithmetic(self, i, t):      
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"485 + 237 = 722", color=BLACK)], 
-            bottom_text="Basic arithmetic operations.\nAddition, subtraction, multiplication, and division.")
+            bottom_text="Basic arithmetic operations.\nAddition, subtraction, multiplication, and division.",
+            grid_coords=(0, 0))  # Center of the grid
     
     def chap_fractions(self, i, t):        
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"\frac{3}{4} + \frac{5}{6} = \frac{19}{24}", color=BLACK)], 
-            bottom_text="Operations with fractions.\nAddition, subtraction, multiplication, and division.")
+            bottom_text="Operations with fractions.\nAddition, subtraction, multiplication, and division.",
+            grid_coords=(0, 0))
     
     def chap_decimals(self, i, t):         
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"0.125 \times 8 = 1.0", color=BLACK)], 
-            bottom_text="Decimal arithmetic.\nMultiplication and conversion of decimals.")
+            bottom_text="Decimal arithmetic.\nMultiplication and conversion of decimals.",
+            grid_coords=(0, 0))
     
     def chap_using_calculator(self, i, t):       
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"12.5 \times 4.8 = 60", color=BLACK)], 
-            bottom_text="Scientific calculator techniques.\nUsing advanced functions efficiently.")
+            bottom_text="Scientific calculator techniques.\nUsing advanced functions efficiently.",
+            grid_coords=(0, 0))
     
     def chap_percentages(self, i, t):      
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"15\% \text{ of } 80 = 12", color=BLACK)], 
-            bottom_text="Percentage calculations.\nFinding percentages, increases, and decreases.")
+            bottom_text="Percentage calculations.\nFinding percentages, increases, and decreases.",
+            grid_coords=(0, 0))
     
     def chap_ratio_and_proportion(self, i, t):            
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"3:5 \;\to\; 6:10", color=BLACK)], 
-            bottom_text="Ratios and proportions.\nUnderstanding scale and distribution.")
+            bottom_text="Ratios and proportions.\nUnderstanding scale and distribution.",
+            grid_coords=(0, 0))
     
     def chap_powers_roots_and_laws_of_indices(self, i, t):           
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"2^5 = 32 \quad ; \quad \sqrt{36} = 6", color=BLACK)], 
-            bottom_text="Exponents, roots, and laws of indices.\nPower formulas and radical expressions.")
+            bottom_text="Exponents, roots, and laws of indices.\nPower formulas and radical expressions.",
+            grid_coords=(0, 0))
     
     def chap_units_prefixes_and_engineering_notation(self, i, t):            
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"4.7\,\text{k}\Omega = 4700\,\Omega", color=BLACK)], 
-            bottom_text="SI unit conversions.\nWorking with prefixes and engineering notation.")
+            bottom_text="SI unit conversions.\nWorking with prefixes and engineering notation.",
+            grid_coords=(0, 0))
     
     def chap_basic_algebra(self, i, t):    
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"3x + 5 = 20", color=BLACK)], 
-            bottom_text="Basic algebraic manipulation.\nSolving expressions and equations.")
+            bottom_text="Basic algebraic manipulation.\nSolving expressions and equations.",
+            grid_coords=(0, 0))
     
     def chap_further_algebra(self, i, t): 
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"(x+2)(x-3) = x^2 - x - 6", color=BLACK)], 
-            bottom_text="Polynomial expansion and factorization.\nPreparing for complex equations.")
+            bottom_text="Polynomial expansion and factorization.\nPreparing for complex equations.",
+            grid_coords=(0, 0))
     
     def chap_solving_simple_equations(self, i, t): 
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"5x - 13 = 27 \;\Rightarrow\; x=8", color=BLACK)], 
-            bottom_text="Solving single variable equations.\nIsolating the unknown to find solutions.")
+            bottom_text="Solving single variable equations.\nIsolating the unknown to find solutions.",
+            grid_coords=(0, 0))
     
     def chap_transposing_formulae(self, i, t):      
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"v = u + at \;\Rightarrow\; a = \frac{v-u}{t}", color=BLACK)], 
-            bottom_text="Transposing formulas.\nRearranging equations to solve for specific variables.")
+            bottom_text="Transposing formulas.\nRearranging equations to solve for specific variables.",
+            grid_coords=(0, 0))
     
     def chap_solving_simultaneous_equations(self, i, t):     
         eqs = VGroup(
@@ -358,34 +481,40 @@ class EngineeringMathWithGrids(Scene):
         sol = MathTex(r"x = 3,\; y = 2", color=BLACK).next_to(eqs, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[eqs, sol], 
-            bottom_text="Solving systems of equations.\nFinding intersection points of linear equations.")
+            bottom_text="Solving systems of equations.\nFinding intersection points of linear equations.",
+            grid_coords=(0, 0))
     
     def chap_solving_quadratic_equations(self, i, t):        
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}", color=BLACK)], 
-            bottom_text="Quadratic formula.\nSolving second-degree equations.")
+            bottom_text="Quadratic formula.\nSolving second-degree equations.",
+            grid_coords=(0, 0))
     
     def chap_logarithms(self, i, t):       
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"\log_{10} 100 = 2", color=BLACK)], 
-            bottom_text="Properties of logarithms.\nSimplifying products and complex powers.")
+            bottom_text="Properties of logarithms.\nSimplifying products and complex powers.",
+            grid_coords=(0, 0))
     
     def chap_exponential_functions(self, i, t):      
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"e^{0.693} \approx 2", color=BLACK)], 
-            bottom_text="Exponential functions.\nModeling natural growth or decay.")
+            bottom_text="Exponential functions.\nModeling natural growth or decay.",
+            grid_coords=(0, 0))
     
     def chap_straight_line_graphs(self, i, t):    
         eq = MathTex(r"y = mx + c", color=BLACK)
         example = MathTex(r"y = 2x + 3", color=BLACK).next_to(eq, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[eq, example],
-            bottom_text="Equation of a straight line.\nSlope (m) and y-intercept (c).")
+            bottom_text="Equation of a straight line.\nSlope (m) and y-intercept (c).",
+            grid_coords=(0, 0))
     
     def chap_graphs_reducing_non_linear_laws_to_linear_form(self, i, t): 
         self.display_chapter(i, t, 
             left_mobs=[MathTex(r"y = kx^n \;\Rightarrow\; \log y = \log k + n \log x", color=BLACK)], 
-            bottom_text="Linearizing non-linear relationships.\nUsing logarithms to create linear graphs.")
+            bottom_text="Linearizing non-linear relationships.\nUsing logarithms to create linear graphs.",
+            grid_coords=(0, 0))
     
     def chap_graphical_solution_of_equations(self, i, t): 
         eqs = VGroup(
@@ -395,14 +524,16 @@ class EngineeringMathWithGrids(Scene):
         sol = MathTex(r"\text{Intersection at } x = 1.5", color=BLACK).next_to(eqs, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[eqs, sol],
-            bottom_text="Graphical solution methods.\nFinding solutions through intersection points.")
+            bottom_text="Graphical solution methods.\nFinding solutions through intersection points.",
+            grid_coords=(0, 0))
     
     def chap_angles_and_triangles(self, i, t): 
         eq = MathTex(r"A + B + C = 180^\circ", color=BLACK)
         example = MathTex(r"60^\circ + 60^\circ + 60^\circ = 180^\circ", color=BLACK).next_to(eq, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[eq, example],
-            bottom_text="Angle properties of triangles.\nSum of interior angles equals 180 degrees.")
+            bottom_text="Angle properties of triangles.\nSum of interior angles equals 180 degrees.",
+            grid_coords=(0, 0))
     
     def chap_introduction_to_trigonometry(self, i, t):     
         soh = MathTex(r"\sin\theta = \frac{\text{opposite}}{\text{hypotenuse}}", color=BLACK)
@@ -410,28 +541,32 @@ class EngineeringMathWithGrids(Scene):
         toa = MathTex(r"\tan\theta = \frac{\text{opposite}}{\text{adjacent}}", color=BLACK).next_to(cah, DOWN, buff=0.3)
         self.display_chapter(i, t, 
             left_mobs=[soh, cah, toa],
-            bottom_text="Trigonometric ratios SOH CAH TOA.\nApplications to right-angled triangles.")
+            bottom_text="Trigonometric ratios SOH CAH TOA.\nApplications to right-angled triangles.",
+            grid_coords=(0, 0))
     
     def chap_trigonometric_waveforms(self, i, t):   
         eq = MathTex(r"y = A \sin(\omega t + \phi)", color=BLACK)
         example = MathTex(r"A = 1,\; \omega = 2\pi,\; \phi = 0", color=BLACK).next_to(eq, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[eq, example],
-            bottom_text="Trigonometric waveforms.\nModeling periodic phenomena like AC currents.")
+            bottom_text="Trigonometric waveforms.\nModeling periodic phenomena like AC currents.",
+            grid_coords=(0, 0))
     
     def chap_non_right_angled_triangles_and_applications(self, i, t): 
         law_of_sines = MathTex(r"\frac{a}{\sin A} = \frac{b}{\sin B} = \frac{c}{\sin C}", color=BLACK)
         law_of_cosines = MathTex(r"c^2 = a^2 + b^2 - 2ab\cos C", color=BLACK).next_to(law_of_sines, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[law_of_sines, law_of_cosines],
-            bottom_text="Solving non-right-angled triangles.\nUsing sine rule and cosine rule.")
+            bottom_text="Solving non-right-angled triangles.\nUsing sine rule and cosine rule.",
+            grid_coords=(0, 0))
     
     def chap_cartesian_and_polar_coordinates(self, i, t):      
         cartesian = MathTex(r"(x, y) = (2, 3)", color=BLACK)
         polar = MathTex(r"(r, \theta) = (\sqrt{13}, 56.3^\circ)", color=BLACK).next_to(cartesian, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[cartesian, polar],
-            bottom_text="Coordinate system conversions.\nCartesian to polar and vice versa.")
+            bottom_text="Coordinate system conversions.\nCartesian to polar and vice versa.",
+            grid_coords=(0, 0))
     
     def chap_areas_of_common_shapes(self, i, t):            
         rectangle = MathTex(r"A_{\text{rect}} = l \times w", color=BLACK)
@@ -439,14 +574,16 @@ class EngineeringMathWithGrids(Scene):
         circle = MathTex(r"A_{\text{circle}} = \pi r^2", color=BLACK).next_to(triangle, DOWN, buff=0.3)
         self.display_chapter(i, t, 
             left_mobs=[rectangle, triangle, circle],
-            bottom_text="Area formulas for common shapes.\nRectangle, triangle, and circle areas.")
+            bottom_text="Area formulas for common shapes.\nRectangle, triangle, and circle areas.",
+            grid_coords=(0, 0))
     
     def chap_the_circle_and_its_properties(self, i, t):           
         circumference = MathTex(r"C = 2\pi r", color=BLACK)
         area = MathTex(r"A = \pi r^2", color=BLACK).next_to(circumference, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[circumference, area],
-            bottom_text="Properties of circles.\nCircumference and area calculations.")
+            bottom_text="Properties of circles.\nCircumference and area calculations.",
+            grid_coords=(0, 0))
     
     def chap_volumes_and_surface_areas_of_common_solids(self, i, t):          
         cube_vol = MathTex(r"V_{\text{cube}} = a^3", color=BLACK)
@@ -454,34 +591,39 @@ class EngineeringMathWithGrids(Scene):
         sphere_vol = MathTex(r"V_{\text{sphere}} = \frac{4}{3}\pi r^3", color=BLACK).next_to(cube_sa, DOWN, buff=0.3)
         self.display_chapter(i, t, 
             left_mobs=[cube_vol, cube_sa, sphere_vol],
-            bottom_text="Volume and surface area formulas.\nFor cubes, spheres, and other solids.")
+            bottom_text="Volume and surface area formulas.\nFor cubes, spheres, and other solids.",
+            grid_coords=(0, 0))
     
     def chap_irregular_areas_and_volumes_and_mean_values(self, i, t):        
         simpson = MathTex(r"A \approx \frac{h}{3}[y_0 + 4y_1 + 2y_2 + 4y_3 + y_4]", color=BLACK)
         self.display_chapter(i, t, 
             left_mobs=[simpson],
-            bottom_text="Numerical integration methods.\nSimpson's rule for irregular areas.")
+            bottom_text="Numerical integration methods.\nSimpson's rule for irregular areas.",
+            grid_coords=(0, 0))
     
     def chap_vectors(self, i, t):          
         vector_add = MathTex(r"\mathbf{A} + \mathbf{B} = (a_x+b_x, a_y+b_y)", color=BLACK)
         magnitude = MathTex(r"|\mathbf{A}| = \sqrt{a_x^2 + a_y^2}", color=BLACK).next_to(vector_add, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[vector_add, magnitude],
-            bottom_text="Vector operations.\nAddition, subtraction, and magnitude calculations.")
+            bottom_text="Vector operations.\nAddition, subtraction, and magnitude calculations.",
+            grid_coords=(0, 0))
     
     def chap_methods_of_adding_alternating_waveforms(self, i, t): 
         sine_sum = MathTex(r"A\sin(\omega t) + B\sin(\omega t + \phi)", color=BLACK)
         phasor = MathTex(r"R\sin(\omega t + \theta)", color=BLACK).next_to(sine_sum, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[sine_sum, phasor],
-            bottom_text="Adding alternating waveforms.\nUsing phasor diagrams for AC analysis.")
+            bottom_text="Adding alternating waveforms.\nUsing phasor diagrams for AC analysis.",
+            grid_coords=(0, 0))
     
     def chap_presentation_of_statistical_data(self, i, t): 
         data = MathTex(r"\text{Data: } 5, 8, 12, 7, 3, 9, 6", color=BLACK)
         stats = MathTex(r"\text{Bar charts, histograms, pie charts}", color=BLACK).next_to(data, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[data, stats],
-            bottom_text="Visual presentation of data.\nBar charts, histograms, and pie charts.")
+            bottom_text="Visual presentation of data.\nBar charts, histograms, and pie charts.",
+            grid_coords=(0, 0))
     
     def chap_mean_median_mode_and_standard_deviation(self, i, t): 
         mean = MathTex(r"\text{Mean} = \frac{\sum x}{n}", color=BLACK)
@@ -489,49 +631,56 @@ class EngineeringMathWithGrids(Scene):
         std_dev = MathTex(r"\sigma = \sqrt{\frac{\sum (x-\mu)^2}{n}}", color=BLACK).next_to(median, DOWN, buff=0.3)
         self.display_chapter(i, t, 
             left_mobs=[mean, median, std_dev],
-            bottom_text="Measures of central tendency.\nMean, median, mode, and standard deviation.")
+            bottom_text="Measures of central tendency.\nMean, median, mode, and standard deviation.",
+            grid_coords=(0, 0))
     
     def chap_probability(self, i, t):      
         union = MathTex(r"P(A \cup B) = P(A) + P(B) - P(A \cap B)", color=BLACK)
         conditional = MathTex(r"P(A|B) = \frac{P(A \cap B)}{P(B)}", color=BLACK).next_to(union, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[union, conditional],
-            bottom_text="Probability principles.\nCalculating chances of events occurring.")
+            bottom_text="Probability principles.\nCalculating chances of events occurring.",
+            grid_coords=(0, 0))
     
     def chap_introduction_to_differentiation(self, i, t): 
         derivative = MathTex(r"\frac{d}{dx}(x^n) = nx^{n-1}", color=BLACK)
         example = MathTex(r"\frac{d}{dx}(3x^2 - 4x + 1) = 6x - 4", color=BLACK).next_to(derivative, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[derivative, example],
-            bottom_text="Differentiation (derivatives).\nFinding the slope of curves.")
+            bottom_text="Differentiation (derivatives).\nFinding the slope of curves.",
+            grid_coords=(0, 0))
     
     def chap_introduction_to_integration(self, i, t):      
         integral = MathTex(r"\int x^n dx = \frac{x^{n+1}}{n+1} + C", color=BLACK)
         example = MathTex(r"\int (4x^3 - 2x) dx = x^4 - x^2 + C", color=BLACK).next_to(integral, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[integral, example],
-            bottom_text="Integration (antiderivatives).\nCalculating areas under curves.")
+            bottom_text="Integration (antiderivatives).\nCalculating areas under curves.",
+            grid_coords=(0, 0))
     
     def chap_number_sequences(self, i, t):        
         arithmetic = MathTex(r"a_n = a_1 + (n-1)d", color=BLACK)
         example = MathTex(r"2, 5, 8, 11, \dots \quad a_n = 3n - 1", color=BLACK).next_to(arithmetic, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[arithmetic, example],
-            bottom_text="Number sequences and series.\nArithmetic and geometric progressions.")
+            bottom_text="Number sequences and series.\nArithmetic and geometric progressions.",
+            grid_coords=(0, 0))
     
     def chap_binary_octal_and_hexadecimal_numbers(self, i, t):     
         binary = MathTex(r"1011_2 = 11_{10}", color=BLACK)
         hexa = MathTex(r"B_{16} = 11_{10}", color=BLACK).next_to(binary, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[binary, hexa],
-            bottom_text="Number base conversions.\nBinary, octal, and hexadecimal systems.")
+            bottom_text="Number base conversions.\nBinary, octal, and hexadecimal systems.",
+            grid_coords=(0, 0))
     
     def chap_inequalities(self, i, t):     
         inequality = MathTex(r"-2 < x \leq 5", color=BLACK)
         solution = MathTex(r"x \in (-2, 5]", color=BLACK).next_to(inequality, DOWN, buff=0.5)
         self.display_chapter(i, t, 
             left_mobs=[inequality, solution],
-            bottom_text="Solving inequalities.\nRepresenting solutions on number lines.")
+            bottom_text="Solving inequalities.\nRepresenting solutions on number lines.",
+            grid_coords=(0, 0))
     
     def chap_graphs_with_logarithmic_scales(self, i, t):
         log_scale = MathTex(r"\log_{10}(xy) = \log_{10}x + \log_{10}y", color=BLACK)
@@ -541,5 +690,6 @@ class EngineeringMathWithGrids(Scene):
             i, t,
             left_mobs=[log_scale, example], 
             bottom_text="Logarithmic scale graphs.\nCompressing data over wide value ranges.",
-            wait=3
+            wait=3,
+            grid_coords=(0, 0)
         )
