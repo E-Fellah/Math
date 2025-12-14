@@ -83,25 +83,9 @@ class MathProblemSolverTemplate(Scene):
                 MathTex(r"= 2", color=BLACK).next_to(MathTex(r"1+1"), RIGHT)
             ],
             "visuals": [
-                # RIGHT CONTAINER: Manim visual objects only
-                # Example: Coordinate plane
-                Axes(
-                    x_range=[-3, 3, 1],
-                    y_range=[-3, 3, 1],
-                    x_length=5,
-                    y_length=5,
-                    axis_config={"color": BLACK, "stroke_width": 2},
-                    tips=False
-                ).scale(0.7),
-                # Points representing 1 and 1
-                Dot(point=LEFT, color=BLACK),
-                Dot(point=RIGHT, color=BLACK),
-                # Line connecting them
-                Line(start=LEFT, end=RIGHT, color=BLACK, stroke_width=2),
-                # Label for sum
-                Text("2", color=BLACK, font_size=24).next_to(UP * 2, UP)
+                # RIGHT CONTAINER: Will be created dynamically in display_problem
             ],
-            "explanation": "Example: Visualizing addition on a coordinate plane.\nLeft box contains formulas, right box contains visual representations."
+            "explanation": "Visual representation of addition using circles.\nOne circle plus one circle equals two circles."
         }
 
         self.display_problem(current_submission)
@@ -185,9 +169,69 @@ class MathProblemSolverTemplate(Scene):
             math_group.scale_to_fit_width(self.max_upper_width * 0.8)
         math_group.move_to(self.left_box)
         
-        # C. Visual Box (Right) - Manim objects ONLY
-        visual_group = VGroup(*data["visuals"])
-        # Scale visual content to fit
+        # C. Visual Box (Right) - Animated circles demonstration
+        # Get the center cross from the right grid to align our animation
+        center_cross = right_grid[-1]
+        cross_center = center_cross.get_center()
+        
+        # Create circles at positions relative to the cross center
+        # Left circle (first "1")
+        left_circle = Circle(
+            radius=0.4,
+            color=BLUE_D,
+            stroke_width=3,
+            fill_opacity=0.2,
+            fill_color=BLUE_A
+        ).move_to(cross_center + LEFT * 1.5)
+        
+        left_label = Text("1", color=BLACK, font_size=24).next_to(left_circle, DOWN, buff=0.2)
+        
+        # Plus sign
+        plus_sign = Text("+", color=BLACK, font_size=36).move_to(cross_center + LEFT * 0.5)
+        
+        # Right circle (second "1")
+        right_circle = Circle(
+            radius=0.4,
+            color=RED_D,
+            stroke_width=3,
+            fill_opacity=0.2,
+            fill_color=RED_A
+        ).move_to(cross_center + RIGHT * 0.5)
+        
+        right_label = Text("1", color=BLACK, font_size=24).next_to(right_circle, DOWN, buff=0.2)
+        
+        # Equals sign
+        equals_sign = Text("=", color=BLACK, font_size=36).move_to(cross_center + RIGHT * 1.5)
+        
+        # Result circles (the "2")
+        result_circle1 = Circle(
+            radius=0.4,
+            color=GREEN_D,
+            stroke_width=3,
+            fill_opacity=0.2,
+            fill_color=GREEN_A
+        ).move_to(cross_center + RIGHT * 2.5 + UP * 0.5)
+        
+        result_circle2 = Circle(
+            radius=0.4,
+            color=PURPLE_D,
+            stroke_width=3,
+            fill_opacity=0.2,
+            fill_color=PURPLE_A
+        ).move_to(cross_center + RIGHT * 2.5 + DOWN * 0.5)
+        
+        result_label = Text("2", color=BLACK, font_size=24).next_to(result_circle2, DOWN, buff=0.2)
+        
+        # Group all visual elements
+        visual_group = VGroup(
+            left_circle, left_label,
+            plus_sign,
+            right_circle, right_label,
+            equals_sign,
+            result_circle1, result_circle2, result_label
+        )
+        
+        # Scale visual group to fit if needed
         if visual_group.width > self.max_upper_width or visual_group.height > self.max_upper_height:
             visual_group.scale_to_fit_width(self.max_upper_width * 0.9)
             visual_group.scale_to_fit_height(self.max_upper_height * 0.9)
@@ -219,8 +263,34 @@ class MathProblemSolverTemplate(Scene):
         # Animate in order
         self.play(Write(id_text))
         self.play(Write(math_group))
-        self.play(Create(visual_group))
+        
+        # Animate the circles step by step
+        # Step 1: First circle
+        self.play(Create(left_circle), Write(left_label))
+        self.wait(0.5)
+        
+        # Step 2: Plus sign
+        self.play(Write(plus_sign))
+        self.wait(0.5)
+        
+        # Step 3: Second circle
+        self.play(Create(right_circle), Write(right_label))
+        self.wait(0.5)
+        
+        # Step 4: Equals sign
+        self.play(Write(equals_sign))
+        self.wait(0.5)
+        
+        # Step 5: Result circles
+        self.play(
+            Create(result_circle1),
+            Create(result_circle2),
+            Write(result_label)
+        )
+        self.wait(1)
+        
+        # Step 6: Show the explanation
         self.play(Write(expl))
         
-        # Removed the "Aligned" text pop-ups - just keep the subtle grids
-        self.wait(2.5)
+        # Final wait
+        self.wait(3)
