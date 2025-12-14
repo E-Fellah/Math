@@ -6,7 +6,7 @@ config.background_color = WHITE
 config.stroke_color = BLACK
 config.fill_color = BLACK
 
-class MathProblemSolverTemplate(Scene):
+class ReadyToUseMathScript(Scene):
     def construct(self):
         # --- 1. Geometry & Layout Setup ---
         UPPER_FRACTION = 4/5 
@@ -17,12 +17,16 @@ class MathProblemSolverTemplate(Scene):
         lower_height = total_height * LOWER_FRACTION
         upper_box_width = total_width / 2 - 0.1
         
+        # Grid configuration
+        self.grid_spacing = 0.5  # Spacing between grid points
+        self.grid_visible = True  # Toggle for grid visibility
+        
         # Padding & Scaling Factors
         PADDING_FACTOR = 0.95
         NUMBER_FRACTION = 1/8  
         TEXT_FRACTION = 7/8    
         
-        # Gap between bottom containers (same as original design)
+        # Gap between bottom containers
         BOTTOM_GAP = 0.1
         
         # --- UI Containers ---
@@ -30,13 +34,13 @@ class MathProblemSolverTemplate(Scene):
         upper_y_center = UP * (total_height * (0.5 - UPPER_FRACTION/2))
 
         # Create top containers first
-        # Top Left: Formula/Input (MathTex ONLY container)
+        # Top Left: Math Formulas
         self.left_box = Rectangle(
             width=upper_box_width,  height=upper_height - 0.1,   
             color=BLUE_A, stroke_color=BLUE_D, fill_opacity=0.05
         ).move_to(upper_y_center + LEFT * total_width / 4)
         
-        # Top Right: Visual/Graph (Manim Objects ONLY container)
+        # Top Right: Visual/Graph (empty for now)
         self.right_box = Rectangle(
             width=upper_box_width, height=upper_height - 0.1,
             color=RED_A, stroke_color=RED_D, fill_opacity=0.05
@@ -49,7 +53,7 @@ class MathProblemSolverTemplate(Scene):
         # Calculate available width for bottom containers (minus gap)
         available_bottom_width = right_box_right_edge - left_box_left_edge - BOTTOM_GAP
         
-        # Bottom Left: ID/Counter - Align left edge with left_box
+        # Bottom Left: Chapter Counter
         bottom_left_width = available_bottom_width * NUMBER_FRACTION
         bottom_left_x = left_box_left_edge + (bottom_left_width / 2)
         self.bottom_left_box = Rectangle(
@@ -58,7 +62,7 @@ class MathProblemSolverTemplate(Scene):
             color=GREEN_A, stroke_color=GREEN_D, fill_opacity=0.1
         ).move_to([bottom_left_x, bottom_y_center[1], 0])
         
-        # Bottom Right: Explanation/Commentary - Align right edge with right_box
+        # Bottom Right: Explanation
         bottom_right_width = available_bottom_width * TEXT_FRACTION
         bottom_right_x = right_box_right_edge - (bottom_right_width / 2)
         self.bottom_right_box = Rectangle(
@@ -73,224 +77,306 @@ class MathProblemSolverTemplate(Scene):
         self.max_comment_width = self.bottom_right_box.width * PADDING_FACTOR
         self.max_comment_height = self.bottom_right_box.height * PADDING_FACTOR
 
-        # --- 2. Logic: Directly display the example ---
-        # Example math problem with proper format
-        current_submission = {
-            "id": "1",
-            "math_tex": [
-                # LEFT CONTAINER: MathTex objects only
-                MathTex(r"1+1", color=BLACK),
-                MathTex(r"= 2", color=BLACK).next_to(MathTex(r"1+1"), RIGHT)
-            ],
-            "visuals": [
-                # RIGHT CONTAINER: Will be created dynamically in display_problem
-            ],
-            "explanation": "Visual representation of addition using circles.\nOne circle plus one circle equals two circles."
-        }
+        # Font sizes
+        self.commentary_font_size = 24  # Fixed size for explanations
+        self.title_font_size = 20  # Two steps smaller than comment (24 -> 22 -> 20)
+        self.numbering_font_size = 36   # Size for chapter counter
 
-        self.display_problem(current_submission)
+        # --- Display boxes first ---
+        title = Tex(r"\textbf{Ready-to-use Math Script}", font_size=64, color=BLACK)
+        self.play(Write(title))
+        self.wait(1.5)
+        self.play(
+            FadeOut(title),
+            Create(self.left_box),
+            Create(self.right_box),
+            Create(self.bottom_left_box),
+            Create(self.bottom_right_box)
+        )
 
-    def create_alignment_grid(self, container, grid_spacing=0.5):
-        """Create a subtle alignment grid for a container, similar to MS Word's grid"""
+        # --- Create functional coordinate grids for top containers ---
+        left_grid = self.create_coordinate_grid(self.left_box, self.grid_spacing)
+        right_grid = self.create_coordinate_grid(self.right_box, self.grid_spacing)
+        
+        # Add coordinate systems to containers
+        if self.grid_visible:
+            self.play(
+                FadeIn(left_grid, run_time=0.5),
+                FadeIn(right_grid, run_time=0.5)
+            )
+        
+        # Store grids for later use
+        self.left_grid = left_grid
+        self.right_grid = right_grid
+        self.left_grid_points = self.extract_grid_points(self.left_box, self.grid_spacing)
+        self.right_grid_points = self.extract_grid_points(self.right_box, self.grid_spacing)
+        
+        # --- 2. Display Single Example ---
+        
+        # Display chapter title
+        chap_title = Text("Basic Arithmetic", font_size=self.title_font_size, color=BLACK)
+        chap_title.to_corner(UP + LEFT).shift(RIGHT * 0.15 + DOWN * 0.2)
+        
+        # Ensure title stays within left container horizontally
+        left_boundary = self.left_box.get_left()[0] + 0.05
+        if chap_title.get_left()[0] < left_boundary:
+            chap_title.shift(RIGHT * (left_boundary - chap_title.get_left()[0]))
+        
+        self.play(FadeIn(chap_title))
+        
+        # --- Left Container: Static Math Formula ---
+        math_formula = MathTex(r"1 + 1 = 2", color=BLACK)
+        
+        # Scale to fit container
+        if math_formula.width > self.max_upper_width or math_formula.height > self.max_upper_height:
+            scale_factor = min(
+                self.max_upper_width * 0.8 / math_formula.width,
+                self.max_upper_height * 0.8 / math_formula.height
+            )
+            math_formula.scale(scale_factor)
+        
+        # Hang at specific grid coordinates (center)
+        math_formula, actual_coords = self.hang_at_coordinates(
+            math_formula, self.left_box, 0, 0
+        )
+        
+        # --- Bottom Left: Chapter Counter ---
+        num_mob = Text("1/1", font_size=self.numbering_font_size, color=BLACK)
+        num_mob.move_to(self.bottom_left_box)
+        
+        # --- Bottom Right: Explanation ---
+        explanation_text = "Visualizing basic addition.\nOne object plus one object equals two objects."
+        explanation_lines = explanation_text.split('\n')[:2]
+        expl = VGroup()
+        for i, line in enumerate(explanation_lines):
+            line_text = Text(line, color=BLACK, font_size=self.commentary_font_size)
+            line_text.shift(DOWN * i * 0.6)
+            expl.add(line_text)
+        
+        expl.arrange(DOWN, center=False, aligned_edge=LEFT)
+        expl.move_to(self.bottom_right_box)
+        
+        if expl.width > self.max_comment_width:
+            expl.scale_to_fit_width(self.max_comment_width * 0.9)
+        
+        expl.align_to(self.bottom_right_box.get_left(), LEFT)
+        expl.shift(RIGHT * 0.2)
+        
+        # --- Animate left container and bottom containers ---
+        self.play(
+            Write(math_formula),
+            Write(num_mob),
+            Write(expl)
+        )
+        
+        # --- Right Container: Animated Dots ---
+        # Create compact animation in the right container
+        right_center = self.right_box.get_center()
+        
+        # Create dots with minimal spread
+        dot1 = Dot(color=BLUE, radius=0.12)
+        dot2 = Dot(color=BLUE, radius=0.12)
+        dot3 = Dot(color=GREEN, radius=0.12)
+        dot4 = Dot(color=GREEN, radius=0.12)
+        
+        # Position dots in a compact arrangement
+        # First group: left side (1 + 1)
+        dot1.move_to(right_center + LEFT * 1.2 + UP * 0.2)
+        dot2.move_to(right_center + LEFT * 0.4 + UP * 0.2)
+        
+        # Second group: right side (= 2)
+        dot3.move_to(right_center + RIGHT * 0.4 + UP * 0.2)
+        dot4.move_to(right_center + RIGHT * 1.0 + UP * 0.2)
+        
+        # Create operators
+        plus = Text("+", font_size=36, color=BLACK)
+        equals = Text("=", font_size=36, color=BLACK)
+        plus.move_to(right_center + LEFT * 0.8 + UP * 0.2)
+        equals.move_to(right_center + RIGHT * 0.0 + UP * 0.2)
+        
+        # Animation sequence
+        self.wait(1)
+        
+        # Show first dot
+        self.play(FadeIn(dot1))
+        self.wait(0.5)
+        
+        # Show plus sign
+        self.play(FadeIn(plus))
+        self.wait(0.5)
+        
+        # Show second dot
+        self.play(FadeIn(dot2))
+        self.wait(0.5)
+        
+        # Show equals sign
+        self.play(FadeIn(equals))
+        self.wait(0.5)
+        
+        # Show result dots (both at once)
+        self.play(
+            FadeIn(dot3),
+            FadeIn(dot4)
+        )
+        
+        # Add labels to clarify
+        label1 = Text("1", font_size=24, color=BLACK).next_to(dot1, DOWN, buff=0.1)
+        label2 = Text("1", font_size=24, color=BLACK).next_to(dot2, DOWN, buff=0.1)
+        label3 = Text("2", font_size=24, color=BLACK).next_to(dot3, DOWN, buff=0.1)
+        
+        self.wait(1)
+        self.play(
+            Write(label1),
+            Write(label2),
+            Write(label3)
+        )
+        
+        self.wait(2)
+        
+        # --- Cleanup ---
+        self.play(
+            FadeOut(chap_title),
+            FadeOut(math_formula),
+            FadeOut(num_mob),
+            FadeOut(expl),
+            FadeOut(dot1), FadeOut(dot2), FadeOut(dot3), FadeOut(dot4),
+            FadeOut(plus), FadeOut(equals),
+            FadeOut(label1), FadeOut(label2), FadeOut(label3)
+        )
+
+        # Final fade out
+        self.play(FadeOut(self.left_box, self.right_box, self.bottom_left_box, self.bottom_right_box))
+        self.play(FadeOut(self.left_grid, self.right_grid))
+        self.wait(1)
+
+    def create_coordinate_grid(self, container, spacing=0.5):
+        """Create a functional coordinate grid with snapping points"""
         grid = VGroup()
         
         # Get container dimensions and position
-        width = container.width * 0.95  # Slightly smaller than container
+        width = container.width * 0.95
         height = container.height * 0.95
         center = container.get_center()
         
-        # Create vertical grid lines
-        num_vertical = int(width / grid_spacing)
-        for i in range(-num_vertical//2, num_vertical//2 + 1):
-            x_pos = i * grid_spacing
+        # Calculate number of grid points
+        num_x = int(width / spacing)
+        num_y = int(height / spacing)
+        
+        # Create grid lines
+        # Vertical lines
+        for i in range(-num_x//2, num_x//2 + 1):
+            x_pos = i * spacing
             line = Line(
                 start=center + UP * height/2 + RIGHT * x_pos,
                 end=center + DOWN * height/2 + RIGHT * x_pos,
-                color=GRAY_E,  # Very light gray
-                stroke_width=0.5,
-                stroke_opacity=0.2  # Very subtle
+                color=GRAY_D,
+                stroke_width=0.8,
+                stroke_opacity=0.15
             )
             grid.add(line)
         
-        # Create horizontal grid lines
-        num_horizontal = int(height / grid_spacing)
-        for i in range(-num_horizontal//2, num_horizontal//2 + 1):
-            y_pos = i * grid_spacing
+        # Horizontal lines
+        for i in range(-num_y//2, num_y//2 + 1):
+            y_pos = i * spacing
             line = Line(
                 start=center + LEFT * width/2 + UP * y_pos,
                 end=center + RIGHT * width/2 + UP * y_pos,
-                color=GRAY_E,
-                stroke_width=0.5,
-                stroke_opacity=0.2
+                color=GRAY_D,
+                stroke_width=0.8,
+                stroke_opacity=0.15
             )
             grid.add(line)
         
-        # Add center crosshair for alignment
+        # Create grid intersection points (small dots for snapping)
+        for i in range(-num_x//2, num_x//2 + 1):
+            for j in range(-num_y//2, num_y//2 + 1):
+                x_pos = i * spacing
+                y_pos = j * spacing
+                
+                # Create a small dot at intersection
+                dot = Dot(
+                    point=center + RIGHT * x_pos + UP * y_pos,
+                    radius=0.02,
+                    color=BLUE_E,
+                    fill_opacity=0.4
+                )
+                grid.add(dot)
+        
+        # Add center axes for reference
+        x_axis = Line(
+            start=center + LEFT * width/2,
+            end=center + RIGHT * width/2,
+            color=RED_D,
+            stroke_width=1.5,
+            stroke_opacity=0.3
+        )
+        y_axis = Line(
+            start=center + DOWN * height/2,
+            end=center + UP * height/2,
+            color=RED_D,
+            stroke_width=1.5,
+            stroke_opacity=0.3
+        )
+        grid.add(x_axis, y_axis)
+        
+        # Add center crosshair
         center_cross = VGroup(
             Line(
-                start=center + LEFT * 0.3,
-                end=center + RIGHT * 0.3,
-                color=GRAY_D,
-                stroke_width=1,
-                stroke_opacity=0.3
+                start=center + LEFT * 0.15,
+                end=center + RIGHT * 0.15,
+                color=RED_D,
+                stroke_width=2,
+                stroke_opacity=0.5
             ),
             Line(
-                start=center + DOWN * 0.3,
-                end=center + UP * 0.3,
-                color=GRAY_D,
-                stroke_width=1,
-                stroke_opacity=0.3
+                start=center + DOWN * 0.15,
+                end=center + UP * 0.15,
+                color=RED_D,
+                stroke_width=2,
+                stroke_opacity=0.5
             )
         )
         grid.add(center_cross)
         
         return grid
 
-    def display_problem(self, data):
-        # Create Boxes
-        self.play(map(Create, [self.left_box, self.right_box, self.bottom_left_box, self.bottom_right_box]))
+    def extract_grid_points(self, container, spacing):
+        """Extract all grid point coordinates for snapping"""
+        width = container.width * 0.95
+        height = container.height * 0.95
+        center = container.get_center()
+        
+        num_x = int(width / spacing)
+        num_y = int(height / spacing)
+        
+        grid_points = []
+        for i in range(-num_x//2, num_x//2 + 1):
+            for j in range(-num_y//2, num_y//2 + 1):
+                x_pos = i * spacing
+                y_pos = j * spacing
+                point = center + RIGHT * x_pos + UP * y_pos
+                grid_points.append({
+                    'coords': (i, j),  # Grid coordinates
+                    'position': point,  # Actual position
+                    'x': x_pos,
+                    'y': y_pos
+                })
+        
+        return grid_points
 
-        # Create alignment grids for left and right containers
-        left_grid = self.create_alignment_grid(self.left_box, grid_spacing=0.3)
-        right_grid = self.create_alignment_grid(self.right_box, grid_spacing=0.3)
+    def hang_at_coordinates(self, mobject, container, grid_x, grid_y):
+        """Place an object at specific grid coordinates"""
+        if container == self.left_box:
+            grid_points = self.left_grid_points
+        else:
+            grid_points = self.right_grid_points
         
-        # Add grids to containers (fade them in very subtly)
-        self.play(FadeIn(left_grid, run_time=0.5, lag_ratio=0.1, rate_func=rate_functions.ease_in_out_sine))
-        self.play(FadeIn(right_grid, run_time=0.5, lag_ratio=0.1, rate_func=rate_functions.ease_in_out_sine))
-
-        # A. ID Box
-        id_text = Text(str(data["id"]), color=BLACK, font_size=36).move_to(self.bottom_left_box)
+        # Find point with given coordinates
+        for point in grid_points:
+            if point['coords'] == (grid_x, grid_y):
+                mobject.move_to(point['position'])
+                return mobject, point['coords']
         
-        # B. Math Box (Left) - MathTex objects ONLY
-        math_group = VGroup(*data["math_tex"])
-        # Center and scale math content
-        math_group.arrange(RIGHT, buff=0.5)
-        if math_group.width > self.max_upper_width or math_group.height > self.max_upper_height:
-            math_group.scale_to_fit_width(self.max_upper_width * 0.8)
-        math_group.move_to(self.left_box)
-        
-        # C. Visual Box (Right) - Animated circles demonstration
-        # Get the center cross from the right grid to align our animation
-        center_cross = right_grid[-1]
-        cross_center = center_cross.get_center()
-        
-        # Create circles at positions relative to the cross center
-        # Left circle (first "1")
-        left_circle = Circle(
-            radius=0.4,
-            color=BLUE_D,
-            stroke_width=3,
-            fill_opacity=0.2,
-            fill_color=BLUE_A
-        ).move_to(cross_center + LEFT * 1.5)
-        
-        left_label = Text("1", color=BLACK, font_size=24).next_to(left_circle, DOWN, buff=0.2)
-        
-        # Plus sign
-        plus_sign = Text("+", color=BLACK, font_size=36).move_to(cross_center + LEFT * 0.5)
-        
-        # Right circle (second "1")
-        right_circle = Circle(
-            radius=0.4,
-            color=RED_D,
-            stroke_width=3,
-            fill_opacity=0.2,
-            fill_color=RED_A
-        ).move_to(cross_center + RIGHT * 0.5)
-        
-        right_label = Text("1", color=BLACK, font_size=24).next_to(right_circle, DOWN, buff=0.2)
-        
-        # Equals sign
-        equals_sign = Text("=", color=BLACK, font_size=36).move_to(cross_center + RIGHT * 1.5)
-        
-        # Result circles (the "2")
-        result_circle1 = Circle(
-            radius=0.4,
-            color=GREEN_D,
-            stroke_width=3,
-            fill_opacity=0.2,
-            fill_color=GREEN_A
-        ).move_to(cross_center + RIGHT * 2.5 + UP * 0.5)
-        
-        result_circle2 = Circle(
-            radius=0.4,
-            color=PURPLE_D,
-            stroke_width=3,
-            fill_opacity=0.2,
-            fill_color=PURPLE_A
-        ).move_to(cross_center + RIGHT * 2.5 + DOWN * 0.5)
-        
-        result_label = Text("2", color=BLACK, font_size=24).next_to(result_circle2, DOWN, buff=0.2)
-        
-        # Group all visual elements
-        visual_group = VGroup(
-            left_circle, left_label,
-            plus_sign,
-            right_circle, right_label,
-            equals_sign,
-            result_circle1, result_circle2, result_label
-        )
-        
-        # Scale visual group to fit if needed
-        if visual_group.width > self.max_upper_width or visual_group.height > self.max_upper_height:
-            visual_group.scale_to_fit_width(self.max_upper_width * 0.9)
-            visual_group.scale_to_fit_height(self.max_upper_height * 0.9)
-        visual_group.move_to(self.right_box)
-
-        # D. Explanation (Bottom Right) - Fixed font size 24, max 2 lines
-        # Split explanation into lines, limit to 2 lines
-        explanation_lines = data["explanation"].split('\n')[:2]
-        
-        # Create explanation text with fixed font size
-        expl = VGroup()
-        for i, line in enumerate(explanation_lines):
-            line_text = Text(line, color=BLACK, font_size=24)
-            line_text.shift(DOWN * i * 0.5)  # Line spacing
-            expl.add(line_text)
-        
-        # Center the explanation group vertically
-        expl.arrange(DOWN, center=False, aligned_edge=LEFT)
-        expl.move_to(self.bottom_right_box)
-        
-        # Scale if too wide (but keep font size fixed by scaling group)
-        if expl.width > self.max_comment_width:
-            expl.scale_to_fit_width(self.max_comment_width * 0.9)
-        
-        # Position to align with left edge of container
-        expl.align_to(self.bottom_right_box.get_left(), LEFT)
-        expl.shift(RIGHT * 0.2)
-
-        # Animate in order
-        self.play(Write(id_text))
-        self.play(Write(math_group))
-        
-        # Animate the circles step by step
-        # Step 1: First circle
-        self.play(Create(left_circle), Write(left_label))
-        self.wait(0.5)
-        
-        # Step 2: Plus sign
-        self.play(Write(plus_sign))
-        self.wait(0.5)
-        
-        # Step 3: Second circle
-        self.play(Create(right_circle), Write(right_label))
-        self.wait(0.5)
-        
-        # Step 4: Equals sign
-        self.play(Write(equals_sign))
-        self.wait(0.5)
-        
-        # Step 5: Result circles
-        self.play(
-            Create(result_circle1),
-            Create(result_circle2),
-            Write(result_label)
-        )
-        self.wait(1)
-        
-        # Step 6: Show the explanation
-        self.play(Write(expl))
-        
-        # Final wait
-        self.wait(3)
+        # If exact coordinates not found, return centered
+        mobject.move_to(container.get_center())
+        return mobject, (0, 0)
