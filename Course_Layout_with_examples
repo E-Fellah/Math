@@ -83,7 +83,7 @@ class EngineeringMathWithGrids(Scene):
         self.numbering_font_size = 36   # Size for chapter counter
 
         # --- Display boxes first ---
-        title = Tex(r"\textbf{All Maths from John Bird}", font_size=64, color=BLACK)
+        title = Tex(r"\textbf{Basic Engineering Mathematics}", font_size=64, color=BLACK)
         self.play(Write(title))
         self.wait(1.5)
         self.play(
